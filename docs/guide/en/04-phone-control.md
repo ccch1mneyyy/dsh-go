@@ -12,7 +12,7 @@ Let DSH read the screen, tap and type to get things done on your phone. Pause or
 3. Tap **Turn on** next to **Notifications** and allow notifications in App info. Approvals and the stop button need them.
 4. Tap **Read current screen** to see what DSH can read. This reading isn't sent to the model.
 
-During a task, text on the screen is sent to the model you chose; with a vision model, a screenshot may be included. Bank card and ID numbers are masked first.
+During a task, text on the screen is sent to the model you chose; with a vision model, a screenshot may be included. Some recognized card and ID numbers are masked where possible, but not all sensitive information can be guaranteed to be detected or hidden.
 
 ## Ask DSH to do something
 
@@ -95,11 +95,13 @@ Turning one on opens a page first: what AI can then do, what could go wrong, and
 
 Disclaimer:
 
-- Once on, AI can do the above without anyone confirming.
-- AI can be misled by content in web pages, messages or files.
-- Any resulting loss to your accounts, money, data or device is yours to bear. DSH Go and its developers accept no liability.
-- Turn it on only when you need it, and off when you're done.
-- We advise against turning it on for a device that holds payment or banking details.
+- After lifting a restriction, AI may perform permitted high-risk actions without step-by-step confirmation.
+- AI may misread a screen or follow malicious instructions in pages, messages, or files.
+- Your accounts, money, data, device, or privacy may be harmed. Review consequential actions and results.
+- The software is provided as is. Liability limits apply only where permitted by law; mandatory rights remain.
+- Enable temporarily only on an owned or authorized device. Do not test with real payment details on your primary phone.
+
+Read the [full risk notice and disclaimer](https://github.com/ccch1mneyyy/dsh-Go/blob/main/DISCLAIMER.en.md) for more on authorization, data transmission, ADB/Shizuku and statutory rights.
 
 ## Action log and advanced
 

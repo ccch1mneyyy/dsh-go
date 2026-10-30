@@ -8903,7 +8903,7 @@ class L10nEn extends L10n {
   String get phoneControlTapType => 'Tap and type for you';
 
   @override
-  String get phoneControlSensitiveHint => 'Asks before sending or buying. Never pays.';
+  String get phoneControlSensitiveHint => 'Sending and purchases normally require approval; settings can relax these protections.';
 
   @override
   String get phoneDisclosureWhatTitle => 'What it reads';
@@ -8922,15 +8922,13 @@ class L10nEn extends L10n {
   String get phoneDisclosureWhoTitle => 'Who receives it';
 
   @override
-  String get phoneDisclosureWhoBody =>
-      'Your chosen DeepSeek model in the cloud. Bank card and ID numbers are masked first.';
+  String get phoneDisclosureWhoBody => 'Task-related screen data may be sent to your configured third-party model provider. Some card and ID numbers are masked where detected, but detection is not complete; screenshots may expose sensitive content.';
 
   @override
   String get phoneDisclosureNeverTitle => 'What it won’t do by default';
 
   @override
-  String get phoneDisclosureNeverBody =>
-      'Doesn’t enter passwords or verification codes, or change system settings. Hands back to you instead, and stays out of banking and payment apps.';
+  String get phoneDisclosureNeverBody => 'Passwords, verification codes, and system settings are restricted by default; banking and payment apps are excluded by default. You can explicitly lift these limits in Settings.';
 
   @override
   String get phoneDisclosureStopTitle => 'Stop anytime';
@@ -8943,8 +8941,7 @@ class L10nEn extends L10n {
   String get phoneDisclosureTitle => 'Before turning on Phone control';
 
   @override
-  String get phoneDisclosureIntro =>
-      'DSH reads the screen and taps like you do to get things done. Before turning it on, here’s what to know:';
+  String get phoneDisclosureIntro => 'Phone control can read the screen, tap, and type. Use it only on a device you own or are authorized to control. Read this first:';
 
   @override
   String get phoneDisclosureRestartNote => 'The engine will restart, interrupting any reply in progress';
@@ -8953,7 +8950,7 @@ class L10nEn extends L10n {
   String get phoneDisclosureNotNow => 'Not now';
 
   @override
-  String get phoneDisclosureAgreeEnable => 'Agree';
+  String get phoneDisclosureAgreeEnable => 'Agree and enable';
 
   @override
   String get phoneCheckUnknown => 'Not sure';
@@ -9685,7 +9682,7 @@ class L10nEn extends L10n {
   String get phoneUnlockBusy => 'Can’t turn on while a task is running';
 
   @override
-  String get phoneUnlockFootnote => 'Once on, the consequences are yours. Turn on only when needed, and off when done.';
+  String get phoneUnlockFootnote => 'Lifting restrictions expands AI control and may cause irreversible loss. Turn on only when needed, and off when done.';
 
   @override
   String get phoneUnlockBanks => 'Banking and payment apps';
@@ -9771,21 +9768,19 @@ class L10nEn extends L10n {
   String get phoneUnlockOwnAppRisk2 => 'What’s on these screens is sent to the model';
 
   @override
-  String get phoneUnlockDisclaimer1 => 'Once on, AI can do the above without anyone confirming.';
+  String get phoneUnlockDisclaimer1 => 'After lifting a restriction, AI may perform permitted high-risk actions without step-by-step confirmation.';
 
   @override
-  String get phoneUnlockDisclaimer2 => 'AI can be misled by content in web pages, messages or files.';
+  String get phoneUnlockDisclaimer2 => 'AI may misread a screen or follow malicious instructions in pages, messages, or files.';
 
   @override
-  String get phoneUnlockDisclaimer3 =>
-      'Any resulting loss to your accounts, money, data or device is yours to bear. DSH Go and its developers accept no liability.';
+  String get phoneUnlockDisclaimer3 => 'Your accounts, money, data, device, or privacy may be harmed. Review consequential actions and results.';
 
   @override
-  String get phoneUnlockDisclaimer4 => 'Turn it on only when you need it, and off when you’re done.';
+  String get phoneUnlockDisclaimer4 => 'The software is provided as is. Liability limits apply only where permitted by law; mandatory rights remain.';
 
   @override
-  String get phoneUnlockDisclaimer5 =>
-      'We advise against turning it on for a device that holds payment or banking details.';
+  String get phoneUnlockDisclaimer5 => 'Enable temporarily only on an owned or authorized device. Do not test with real payment details on your primary phone.';
 
   @override
   String get phoneUnlockHold => 'I understand the risks, turn on';

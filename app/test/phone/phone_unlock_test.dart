@@ -55,7 +55,7 @@ void main() {
         expect(find.text(hint), findsOneWidget);
         expect(switchOf(tester, unlock).value, isFalse);
       }
-      expect(find.text('开启后的后果由你承担。建议只在需要时开启，用完关闭。'), findsOneWidget);
+      expect(find.text('解除限制会扩大 AI 的操作权限，可能造成不可逆损失。仅在需要时开启，用完关闭。'), findsOneWidget);
       await tester.tap(find.text('银行、支付类 App'));
       await tester.pumpAndSettle();
       expect(find.byType(PhoneAppRulesPage), findsOneWidget);
@@ -74,11 +74,11 @@ void main() {
         '可能出什么事',
         '恶意指令可能诱导 AI 把验证码填到别处，让他人登录你的账号',
         '免责声明',
-        '开启后，AI 可以在无人确认的情况下执行上述操作。',
-        'AI 可能被网页、消息或文件中的内容误导。',
-        '由此造成的账号、资金、数据或设备损失由你自行承担，DSH Go 及其开发者不承担责任。',
-        '建议只在需要时临时开启，用完关闭。',
-        '不建议在存有支付或银行信息的设备上开启。',
+        '解除限制后，AI 可能不经逐步确认便执行上述高风险操作。',
+        'AI 可能误判界面，或被网页、消息与文件中的恶意指令诱导。',
+        '可能造成账号、资金、数据、设备或隐私损失，请自行核对重要操作及结果。',
+        '软件按现状提供；免责仅在适用法律允许范围内有效，不影响依法不得排除的责任。',
+        '仅在自有或获授权的设备上临时开启，用后关闭；请勿在存有真实支付信息的主力机上测试。',
         '我了解风险，开启',
         '按住按钮约 1.5 秒',
       ]) {

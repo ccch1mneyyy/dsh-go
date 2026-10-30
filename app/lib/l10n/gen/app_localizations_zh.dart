@@ -8474,7 +8474,7 @@ class L10nZh extends L10n {
   String get phoneControlTapType => '帮你点按、输入';
 
   @override
-  String get phoneControlSensitiveHint => '发送、下单前先问你，付款由你来';
+  String get phoneControlSensitiveHint => '默认对发送、下单等操作先确认；调整设置可放宽这些保护';
 
   @override
   String get phoneDisclosureWhatTitle => '读什么';
@@ -8492,13 +8492,13 @@ class L10nZh extends L10n {
   String get phoneDisclosureWhoTitle => '发给谁';
 
   @override
-  String get phoneDisclosureWhoBody => '发给你选的 DeepSeek 模型（云端）。银行卡号、身份证号会先打码。';
+  String get phoneDisclosureWhoBody => '任务中的屏幕信息可能发送给你配置的第三方模型提供方。部分卡号、证件号会尝试遮盖，但不保证全部识别；截图可能包含敏感内容。';
 
   @override
   String get phoneDisclosureNeverTitle => '默认不做';
 
   @override
-  String get phoneDisclosureNeverBody => '不输密码和验证码，不改系统设置，遇到就交还给你。银行、支付类 App 也不碰。';
+  String get phoneDisclosureNeverBody => '默认不代填密码和验证码、不改系统设置，银行及支付类 App 默认不碰；这些限制可由你在设置里主动放宽。';
 
   @override
   String get phoneDisclosureStopTitle => '你随时能停';
@@ -8510,7 +8510,7 @@ class L10nZh extends L10n {
   String get phoneDisclosureTitle => '开启手机操控前';
 
   @override
-  String get phoneDisclosureIntro => 'DSH 会像你一样看屏幕、点按，帮你把事办完。开启前，先了解这几点：';
+  String get phoneDisclosureIntro => '手机操控可读取屏幕、点按和输入。请只在自有或获授权的设备上使用，并先了解以下事项：';
 
   @override
   String get phoneDisclosureRestartNote => '开启后引擎会重启一次，进行中的回复会中断';
@@ -8519,7 +8519,7 @@ class L10nZh extends L10n {
   String get phoneDisclosureNotNow => '先不开';
 
   @override
-  String get phoneDisclosureAgreeEnable => '同意并开启';
+  String get phoneDisclosureAgreeEnable => '我了解并同意开启';
 
   @override
   String get phoneCheckUnknown => '不确定';
@@ -9200,7 +9200,7 @@ class L10nZh extends L10n {
   String get phoneUnlockBusy => '任务进行中，结束后才能开启';
 
   @override
-  String get phoneUnlockFootnote => '开启后的后果由你承担。建议只在需要时开启，用完关闭。';
+  String get phoneUnlockFootnote => '解除限制会扩大 AI 的操作权限，可能造成不可逆损失。仅在需要时开启，用完关闭。';
 
   @override
   String get phoneUnlockBanks => '银行、支付类 App';
@@ -9281,19 +9281,19 @@ class L10nZh extends L10n {
   String get phoneUnlockOwnAppRisk2 => '这些界面上的内容会发给模型';
 
   @override
-  String get phoneUnlockDisclaimer1 => '开启后，AI 可以在无人确认的情况下执行上述操作。';
+  String get phoneUnlockDisclaimer1 => '解除限制后，AI 可能不经逐步确认便执行上述高风险操作。';
 
   @override
-  String get phoneUnlockDisclaimer2 => 'AI 可能被网页、消息或文件中的内容误导。';
+  String get phoneUnlockDisclaimer2 => 'AI 可能误判界面，或被网页、消息与文件中的恶意指令诱导。';
 
   @override
-  String get phoneUnlockDisclaimer3 => '由此造成的账号、资金、数据或设备损失由你自行承担，DSH Go 及其开发者不承担责任。';
+  String get phoneUnlockDisclaimer3 => '可能造成账号、资金、数据、设备或隐私损失，请自行核对重要操作及结果。';
 
   @override
-  String get phoneUnlockDisclaimer4 => '建议只在需要时临时开启，用完关闭。';
+  String get phoneUnlockDisclaimer4 => '软件按现状提供；免责仅在适用法律允许范围内有效，不影响依法不得排除的责任。';
 
   @override
-  String get phoneUnlockDisclaimer5 => '不建议在存有支付或银行信息的设备上开启。';
+  String get phoneUnlockDisclaimer5 => '仅在自有或获授权的设备上临时开启，用后关闭；请勿在存有真实支付信息的主力机上测试。';
 
   @override
   String get phoneUnlockHold => '我了解风险，开启';

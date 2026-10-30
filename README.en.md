@@ -153,7 +153,7 @@
 
 <h3 align="center">Phone control</h3>
 
-<p align="center">DSH reads the screen and taps for you. Payments, passwords and codes always stay with you.</p>
+<p align="center">DSH reads the screen and taps for you. Payments and credentials are restricted by default; lifting limits requires separate confirmation.</p>
 
 <p align="center">
   <picture>
@@ -191,6 +191,9 @@ The local engine uses compatible PRoot startup by default. Direct startup is off
 
 ## Data and permissions
 
+**Risk notice:** AI phone control can make mistakes or follow malicious content. Lifting restrictions expands access to passwords and system settings. Read the [Risk notice and disclaimer](DISCLAIMER.en.md) and [Phone control guide](docs/guide/en/04-phone-control.md) first. Do not rely on unattended control for financial or account-security decisions.
+
+
 Model requests go to the provider you configure. During phone-control tasks, relevant screen text may be sent to the model, and vision-capable models may receive screenshots. Read the app's permission disclosure before enabling the feature.
 
 “Send anonymous usage statistics” is on by default. You can turn it off during onboarding or in Settings → Privacy and sharing. See [Troubleshooting](docs/guide/en/11-faq.md) for the fields collected and what happens when it is disabled. Review content before sharing it; recipients can save a copy of a shared link or file's contents.
@@ -209,7 +212,7 @@ No. DSH Go is an unofficial client made by the community, built on the open-sour
 <summary><b>Is it safe?</b></summary>
 <br>
 
-The local web interface only answers to the app itself. Shared links are end-to-end encrypted: the key lives only in the link, and the server never sees the content. Phone control always hands payments, passwords, codes and system settings back to you.
+The local web interface only answers to the app itself. Shared links are end-to-end encrypted: the key lives only in the link, and the server never sees the content. Phone control restricts payments, passwords, codes, and system settings by default, but users can explicitly lift some restrictions. Confirmations cannot prevent every mistake; see the [disclaimer](DISCLAIMER.en.md).
 
 </details>
 
