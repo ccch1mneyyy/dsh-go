@@ -24,7 +24,8 @@ import 'stream_row.dart';
 /// ```
 /// ⚛ 思考中 · 先看 pubspec 里锁的版本…   ⌄   ← 轨道在转;预览是最近一段的首行
 /// ⚛ 思考 · 用户想把工具调用折叠起来…    ⌄   ← 完成后预览全文首行
-/// │ 全文(次级排版)
+/// │ 全文(次级排版)                        ← 点正文任意处也收回去
+/// │ ⌃ 收起                                ← 展开区末尾留一个出口
 /// ```
 ///
 /// 图形块是品牌蓝(思考是 DeepSeek 的品牌时刻),其余都是过程行的次级色。
@@ -94,6 +95,13 @@ class _ThinkingPillState extends State<ThinkingPill> {
     super.dispose();
   }
 
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  /// 展开区自己也能收回去:长思考读完时人已经在下面了,不必滚回标题行。
+  void _collapse() {
+    if (_expanded) setState(() => _expanded = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -104,6 +112,9 @@ class _ThinkingPillState extends State<ThinkingPill> {
     final active = widget.active;
     final preview = _expanded ? '' : thinkingPreview(widget.reasoning, active: active);
     final detail = StreamRow.detail(context);
+    final body = _hasProviderScope(context)
+        ? _TranslatableReasoning(text: widget.reasoning.trim(), active: active, holder: _translation)
+        : MarkdownBody(text: widget.reasoning.trim(), streaming: active, secondary: true);
 
     final header = Row(
       children: [
@@ -160,20 +171,62 @@ class _ThinkingPillState extends State<ThinkingPill> {
         Semantics(
           button: true,
           expanded: _expanded,
-          child: StreamRowFrame(onTap: () => setState(() => _expanded = !_expanded), child: header),
+          child: StreamRowFrame(onTap: _toggle, child: header),
         ),
         ExpandReveal(
           open: _expanded,
           child: StreamThread(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 8),
-              child: _hasProviderScope(context)
-                  ? _TranslatableReasoning(text: widget.reasoning.trim(), active: active, holder: _translation)
-                  : MarkdownBody(text: widget.reasoning.trim(), streaming: active, secondary: true),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 正文整块可以点:整段读完想收起时,手指就在这儿。
+                // 链接和翻译胶囊自带识别器,点的还是它们;这里只兜住空白处。
+                // excludeFromSemantics:读屏仍走标题行和底部「收起」,免得整段
+                // 思考被念成一个大按钮。
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  excludeFromSemantics: true,
+                  onTap: _collapse,
+                  child: Padding(padding: const EdgeInsets.only(top: 4), child: body),
+                ),
+                const SizedBox(height: 4),
+                _CollapseFooter(onTap: _collapse),
+                const SizedBox(height: 4),
+              ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 展开区末尾的「收起」:还是那条过程行的骨相(同一点按区、同一套次级字色),
+/// 箭头朝上。只在展开时在树上,跟着 [ExpandReveal] 一起长出来、一起淡出。
+class _CollapseFooter extends StatelessWidget {
+  const _CollapseFooter({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.commonCollapse;
+    return Semantics(
+      button: true,
+      label: label,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: StreamRowFrame(
+        onTap: onTap,
+        child: Row(
+          children: [
+            StreamChevron(open: true),
+            const SizedBox(width: 6),
+            Text(label, style: StreamRow.label(context)),
+          ],
+        ),
+      ),
     );
   }
 }
