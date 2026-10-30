@@ -10,6 +10,7 @@ import 'attachments.dart';
 import 'chat_error_text.dart';
 import 'connection_state.dart';
 import 'hosts_state.dart';
+import 'models_state.dart';
 import 'notify_state.dart' show appForegroundProvider;
 import 'run_pulse.dart';
 import 'sessions_state.dart';
@@ -404,6 +405,9 @@ class ChatController extends Notifier<ChatState> {
   bool _dirty = false;
   ModelSelection? _model;
   Object? _modelChange;
+
+  /// A model-selection repair for this session is already on the wire.
+  bool _healingModel = false;
   Object? _historyRead;
   List<PendingPrompt> _pending = const [];
 
@@ -555,6 +559,10 @@ class ChatController extends Notifier<ChatState> {
     // Token speed and compaction for the activity pill (see run_pulse.dart).
     final pulse = ref.watch(runPulseProvider(sessionId));
     _listen(client, pulse, building: true);
+    // A model edit (thinking levels removed) can make this session's stored
+    // selection invalid without touching the conversation; heal it when the
+    // catalog catches up, not on the next refused prompt.
+    ref.listen<AsyncValue<ModelCatalog?>>(modelCatalogProvider, (_, _) => scheduleMicrotask(_healModelSelection));
     // The stream gives up after a long outage: follow again once reconnected.
     final buildOwner = ref;
     _states = client.mux.states.listen((connection) {
@@ -969,6 +977,7 @@ class ChatController extends Notifier<ChatState> {
     switch (event) {
       case ModelSelectedEvent(:final selection?):
         _model = selection;
+        scheduleMicrotask(_healModelSelection);
       case SessionSnapshotEvent(:final events, :final projections, :final isResync):
         ModelSelection? latest;
         for (final e in events) {
@@ -977,10 +986,56 @@ class ChatController extends Notifier<ChatState> {
           }
         }
         _model = latest ?? (isResync ? _model : null) ?? projections.nextModel ?? _model;
+        scheduleMicrotask(_healModelSelection);
       default:
         break;
     }
   }
+
+  /// The provider's model edit (thinking switched off) removes every
+  /// `reasoningEfforts`; the Host keeps this session's old selection, and DSH
+  /// refuses its effort — even `off` — as `UNSUPPORTED_REASONING_EFFORT` on
+  /// the next request. Replace it with the same model and no effort.
+  void _healModelSelection() {
+    // A Host switch keeps [_model] until the new Host's snapshot replaces it;
+    // never send the previous Host's selection to the same session id.
+    if (!ref.mounted || !_synchronized || _healingModel) return;
+    final wanted = _model;
+    final catalog = ref.read(modelCatalogProvider).value;
+    if (wanted == null || catalog == null) return;
+    final normalized = normalizeModelSelection(catalog, wanted);
+    if (identical(normalized, wanted)) return;
+    _healingModel = true;
+    unawaited(() async {
+      await _repairModelSelection(normalized, wanted);
+      _healingModel = false;
+      // A selection chosen meanwhile (another device, the picker) deserves
+      // its own check; the repair's reply no longer owns [_model].
+      if (ref.mounted && !_sameSelection(_model, wanted)) scheduleMicrotask(_healModelSelection);
+    }());
+  }
+
+  /// How many times a repair of one selection is tried: a transient carrier
+  /// failure must not leave the stale effort for the next prompt to hit.
+  static const _repairAttempts = 3;
+
+  /// Posts [normalized], unless someone else replaced the model [wanted]
+  /// meanwhile. Retries only while the selection is still [wanted] and the
+  /// catalog still refuses its effort, so a rejection ends the repair.
+  Future<void> _repairModelSelection(ModelSelection normalized, ModelSelection wanted) async {
+    for (var attempt = 0; attempt < _repairAttempts; attempt++) {
+      if (!_sameSelection(_model, wanted)) return;
+      if (await _setModel(normalized, announceFailure: false)) return;
+      if (!ref.mounted || !_sameSelection(_model, wanted)) return;
+      final catalog = ref.read(modelCatalogProvider).value;
+      if (catalog == null || identical(normalizeModelSelection(catalog, wanted), wanted)) return;
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+  }
+
+  /// Two selections name the same model and the same effort.
+  static bool _sameSelection(ModelSelection? a, ModelSelection? b) =>
+      a?.provider == b?.provider && a?.model == b?.model && a?.reasoningEffort == b?.reasoningEffort;
 
   /// Coalesces streaming updates to roughly one rebuild per frame.
   void _schedule() {
@@ -1553,9 +1608,17 @@ class ChatController extends Notifier<ChatState> {
   }
 
   /// Switches the model for this session (takes effect on the next request).
-  Future<bool> setModel(ModelSelection selection) async {
+  ///
+  /// `session/selectModel` also saves the pair as the default for new
+  /// conversations. A repair ([_healModelSelection]) therefore runs only when
+  /// a whole turn would otherwise be refused, and never replaces a newer
+  /// choice: the latest request wins over ones still on the wire.
+  Future<bool> setModel(ModelSelection selection) => _setModel(selection, announceFailure: true);
+
+  Future<bool> _setModel(ModelSelection selection, {required bool announceFailure}) async {
     final owner = ref;
     if (!owner.mounted) return false;
+    selection = normalizeModelSelection(ref.read(modelCatalogProvider).value, selection);
     final client = _client;
     if (client == null) return false;
     final generation = client.mux.generation;
@@ -1581,11 +1644,15 @@ class ChatController extends Notifier<ChatState> {
         reasoningEffort: selection.reasoningEffort,
       );
       if (!current()) return false;
+      // A newer choice (another device, the picker) owns the state now.
+      if (!_sameSelection(_model, selection)) return false;
       _model = applied;
       state = state.copyWith(model: applied);
       return current();
     } catch (e) {
       if (!current()) return false;
+      // Never roll back a newer choice with this request's failure.
+      if (!_sameSelection(_model, selection)) return false;
       _model = previous;
       state = ChatState(
         items: state.items,
@@ -1600,7 +1667,7 @@ class ChatController extends Notifier<ChatState> {
         hasMoreHistory: state.hasMoreHistory,
         loading: state.loading,
         loadingOlder: state.loadingOlder,
-        error: chatErrorText(e, action: appL10n.stateChatModelSwitchFailed),
+        error: announceFailure ? chatErrorText(e, action: appL10n.stateChatModelSwitchFailed) : state.error,
         connection: state.connection,
         model: previous,
         pending: state.pending,

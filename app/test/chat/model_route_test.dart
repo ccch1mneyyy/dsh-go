@@ -44,6 +44,42 @@ void main() {
     expect(findModel(both, const ModelSelection(provider: 'custom-gateway', model: 'deepseek-flash')), same(custom));
   });
 
+  test('an effort the model no longer lists is dropped', () {
+    const stale = ModelSelection(provider: 'custom-gateway', model: 'deepseek-flash', reasoningEffort: 'off');
+    final normalized = normalizeModelSelection(customOnly, stale);
+    expect(normalized.provider, 'custom-gateway');
+    expect(normalized.model, 'deepseek-flash');
+    expect(normalized.reasoningEffort, isNull);
+
+    final withEffort = ModelCatalog(
+      defaultSelection: official,
+      routableProviders: const ['custom-gateway'],
+      groups: const [
+        ProviderGroup('custom-gateway', 'Gateway', [
+          ModelInfo(
+            provider: 'custom-gateway',
+            id: 'deepseek-flash',
+            name: 'Gateway Flash',
+            efforts: [ReasoningEffort('off', 'Off', null), ReasoningEffort('high', 'High', null)],
+          ),
+        ]),
+      ],
+      failures: const [],
+    );
+    expect(normalizeModelSelection(withEffort, stale).reasoningEffort, 'off');
+    expect(
+      normalizeModelSelection(
+        withEffort,
+        const ModelSelection(provider: 'custom-gateway', model: 'deepseek-flash', reasoningEffort: 'max'),
+      ).reasoningEffort,
+      isNull,
+    );
+
+    // An unknown route is the Host's call, not this normalization's.
+    const unknown = ModelSelection(provider: 'elsewhere', model: 'm', reasoningEffort: 'off');
+    expect(normalizeModelSelection(customOnly, unknown).reasoningEffort, 'off');
+  });
+
   testWidgets('unavailable official route leaves custom card unselected until explicitly picked', (tester) async {
     ModelSelection? picked;
     await tester.pumpWidget(

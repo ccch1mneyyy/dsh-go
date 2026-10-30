@@ -88,6 +88,23 @@ ModelInfo? findModel(ModelCatalog? catalog, ModelSelection? selection) {
   return null;
 }
 
+/// [selection] with a reasoning effort the model does not offer dropped.
+///
+/// The Host keeps a session's selection when the provider edits that model
+/// (for example, thinking switched off removes every level). DSH then refuses
+/// the stale effort as `UNSUPPORTED_REASONING_EFFORT` — including `off`, which
+/// is an explicit level, not "none" — because the model now lists no efforts
+/// at all. A selection naming an unknown route is left alone: the Host decides
+/// whether that pair is routable.
+ModelSelection normalizeModelSelection(ModelCatalog? catalog, ModelSelection selection) {
+  final model = findModel(catalog, selection);
+  final effort = selection.reasoningEffort;
+  if (model == null || effort == null || model.efforts.any((entry) => entry.id == effort)) {
+    return selection;
+  }
+  return ModelSelection(provider: selection.provider, model: selection.model);
+}
+
 /// The effort [model] starts at when it is picked: the engine's own default
 /// when the model names one (DeepSeek: 高), else 中, else its lowest level
 /// that thinks, else the first. A custom provider's models name no default
