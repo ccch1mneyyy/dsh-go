@@ -143,6 +143,7 @@ void main() {
     test('a lapsed subscription is recognised by provider', () {
       expect(lapsedSubscription(_lapsed('openai-codex').failure), Subscription.chatgpt);
       expect(lapsedSubscription(_lapsed('anthropic').failure), Subscription.claude);
+      expect(lapsedSubscription(_lapsed('xai').failure), Subscription.grok);
       expect(
         lapsedSubscription(
           const LlmFailure(

@@ -46,6 +46,7 @@ class FakeProviderBackend implements ProviderBackend {
     this.writable = true,
     this.diagnosticsByRoute = const {},
     this.discoverResult = const [],
+    this.displayNameOnlyRoutes = const {},
   }) : profiles = [...profiles],
        stored = {...?credentials};
 
@@ -56,6 +57,7 @@ class FakeProviderBackend implements ProviderBackend {
   final String hostLabel;
 
   final List<ProviderProfile> profiles;
+  final Set<String> displayNameOnlyRoutes;
 
   /// Credential store: ref → key.
   final Map<String, String> stored;
@@ -86,6 +88,7 @@ class FakeProviderBackend implements ProviderBackend {
     revision: revision,
     writable: writable,
     userRoutes: {for (final p in profiles) p.route},
+    displayNameOnlyRoutes: displayNameOnlyRoutes,
   );
 
   @override

@@ -1,4 +1,4 @@
-// 订阅登录 (a sheet): ChatGPT / Claude sign-in through the engine's bridge. One
+// 订阅登录 (a sheet): ChatGPT / Claude / Grok sign-in through the engine's bridge. One
 // body per step of the attempt: preparing, finish in the browser, enter a code,
 // paste a code, signed in, not completed.
 
@@ -22,6 +22,7 @@ import '../theme/theme.dart';
 String subscriptionLetter(Subscription s) => switch (s) {
   Subscription.chatgpt => 'G',
   Subscription.claude => 'C',
+  Subscription.grok => 'X',
 };
 
 /// Opens the sign-in sheet; true once signed in. Closing it cancels the

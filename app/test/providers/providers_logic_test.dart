@@ -163,6 +163,21 @@ void main() {
       expect(snapshot.keyStored(gw), isTrue);
     });
 
+    test('keyless custom xai stays visible alongside bare subscription routes', () async {
+      final snapshot = await read(
+        FakeProviderBackend(
+          profiles: const [
+            ProviderProfile(route: 'openai-codex', displayName: 'ChatGPT'),
+            ProviderProfile(route: 'anthropic', displayName: 'Claude'),
+            ProviderProfile(route: 'xai', displayName: 'My xAI', baseUrl: 'https://example.invalid/v1'),
+          ],
+          displayNameOnlyRoutes: const {'openai-codex', 'anthropic'},
+        ),
+      );
+      expect(snapshot.providers.map((p) => p.id), ['xai']);
+      expect(snapshot.providers.single.baseUrl, 'https://example.invalid/v1');
+    });
+
     test('an engine without the adapter reads as unsupported', () async {
       final snapshot = await read(FakeProviderBackend(supported: false));
       expect(snapshot.supported, isFalse);

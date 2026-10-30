@@ -41,7 +41,9 @@ final _codexCatalog = ModelCatalog(
 
 /// A page with one button that opens the sign-in sheet and shows its result.
 class _Opener extends StatefulWidget {
-  const _Opener();
+  const _Opener({this.subscription = Subscription.chatgpt});
+
+  final Subscription subscription;
 
   @override
   State<_Opener> createState() => _OpenerState();
@@ -59,7 +61,7 @@ class _OpenerState extends State<_Opener> {
           Text('result: $result'),
           TextButton(
             onPressed: () async {
-              final ok = await showSubscriptionLogin(context, Subscription.chatgpt);
+              final ok = await showSubscriptionLogin(context, widget.subscription);
               setState(() => result = '$ok');
             },
             child: const Text('open'),
@@ -82,9 +84,13 @@ Future<void> _pump(WidgetTester tester, Widget home, List<Override> overrides, {
 }
 
 /// Opens the sheet against [bridge]; returns the browser fake.
-Future<FakeBrowser> _openSheet(WidgetTester tester, FakeSubscriptionBackend bridge) async {
+Future<FakeBrowser> _openSheet(
+  WidgetTester tester,
+  FakeSubscriptionBackend bridge, {
+  Subscription subscription = Subscription.chatgpt,
+}) async {
   final browser = FakeBrowser();
-  await _pump(tester, const _Opener(), [
+  await _pump(tester, _Opener(subscription: subscription), [
     ...providerOverrides(FakeProviderBackend(), subscriptions: bridge),
     accountBrowserProvider.overrideWithValue(browser),
   ]);
@@ -105,6 +111,17 @@ List<String> _mockClipboard(WidgetTester tester) {
 
 void main() {
   group('rows', () {
+    testWidgets('Grok appears as a subscription and opens its login sheet', (tester) async {
+      final bridge = FakeSubscriptionBackend();
+      await _pump(tester, const ProvidersPage(), providerOverrides(FakeProviderBackend(), subscriptions: bridge));
+      expect(find.text('Grok'), findsOneWidget);
+      expect(find.text('X'), findsOneWidget);
+      await tester.tap(find.text('Grok'));
+      await settle(tester);
+      expect(find.text('登录 Grok'), findsOneWidget);
+      expect(bridge.calls, contains('begin:xai'));
+    });
+
     testWidgets('signed in shows the account; signed out a 登录 capsule', (tester) async {
       final bridge = FakeSubscriptionBackend(statuses: _signedInChatGpt);
       await _pump(
@@ -117,6 +134,7 @@ void main() {
               // The bridge's own route: shown as the subscription, not again.
               ProviderProfile(route: 'openai-codex', displayName: 'ChatGPT'),
             ],
+            displayNameOnlyRoutes: const {'openai-codex'},
             credentials: const {'CUSTOM_MYGW_API_KEY': 'k'},
           ),
           subscriptions: bridge,
@@ -144,6 +162,7 @@ void main() {
       expect(find.text('订阅'), findsNothing);
       expect(find.text('ChatGPT'), findsNothing);
       expect(find.text('Claude'), findsNothing);
+      expect(find.text('Grok'), findsNothing);
     });
 
     testWidgets('the 登录 capsule ends 16 in, centred on the row', (tester) async {
@@ -154,7 +173,12 @@ void main() {
       );
       final row = tester.getRect(find.widgetWithText(ListPageRow, 'Claude'));
       final card = tester.getRect(find.ancestor(of: find.text('Claude'), matching: find.byType(Material)).first);
-      final capsule = tester.getRect(find.widgetWithText(FilledButton, '登录').last);
+      final capsule = tester.getRect(
+        find.descendant(
+          of: find.widgetWithText(ListPageRow, 'Claude'),
+          matching: find.widgetWithText(FilledButton, '登录'),
+        ),
+      );
       expect(card.right - capsule.right, moreOrLessEquals(16, epsilon: 0.6));
       expect(capsule.center.dy, moreOrLessEquals(row.center.dy, epsilon: 0.6));
       expect(capsule.height, moreOrLessEquals(LoginCapsule.height, epsilon: 0.6));
@@ -242,14 +266,16 @@ void main() {
       expect(find.text('没能打开浏览器'), findsOneWidget);
     });
 
-    testWidgets('device: the code, copy it, open the verification page', (tester) async {
+    testWidgets('Grok device login: the code, copy it, open the verification page', (tester) async {
       final copied = _mockClipboard(tester);
       final bridge = FakeSubscriptionBackend(
         steps: const [
-          LoginStep(phase: LoginPhase.device, url: 'https://auth.example.com/device', userCode: 'WDJB-MJHT'),
+          LoginStep(phase: LoginPhase.device, url: 'https://accounts.x.ai/oauth2/device', userCode: 'WDJB-MJHT'),
         ],
       );
-      final browser = await _openSheet(tester, bridge);
+      final browser = await _openSheet(tester, bridge, subscription: Subscription.grok);
+      expect(find.text('登录 Grok'), findsOneWidget);
+      expect(bridge.calls, contains('begin:xai'));
       expect(find.text('WDJB-MJHT'), findsOneWidget);
       expect(browser.opened, isEmpty, reason: 'the code comes first');
       await tester.tap(find.text('复制验证码'));
@@ -257,7 +283,7 @@ void main() {
       expect(copied, ['WDJB-MJHT']);
       await tester.tap(find.text('打开验证页'));
       await tester.pump();
-      expect(browser.opened, [Uri.parse('https://auth.example.com/device')]);
+      expect(browser.opened, [Uri.parse('https://accounts.x.ai/oauth2/device')]);
     });
 
     testWidgets('prompt: paste, 确定 answers, then done closes the sheet and refreshes', (tester) async {
@@ -346,6 +372,29 @@ void main() {
   });
 
   group('signed-in page', () {
+    testWidgets('Grok shows models from the xai route', (tester) async {
+      await _pump(tester, const SubscriptionPage(subscription: Subscription.grok), [
+        ...providerOverrides(
+          FakeProviderBackend(),
+          subscriptions: FakeSubscriptionBackend(
+            statuses: const [SubscriptionStatus(subscription: Subscription.grok, signedIn: true)],
+          ),
+        ),
+        modelCatalogProvider.overrideWith(
+          (ref) async => ModelCatalog(
+            defaultSelection: null,
+            routableProviders: const ['xai'],
+            groups: const [
+              ProviderGroup('xai', 'Grok', [ModelInfo(provider: 'xai', id: 'grok-4.7', name: 'Grok 4.7')]),
+            ],
+            failures: const [],
+          ),
+        ),
+      ]);
+      expect(find.text('Grok 4.7'), findsOneWidget);
+      expect(find.text('退出登录'), findsOneWidget);
+    });
+
     testWidgets('account, the models it brings, sign out with a confirm', (tester) async {
       final bridge = FakeSubscriptionBackend(statuses: [..._signedInChatGpt]);
       await _pump(tester, const _PageOpener(), [
@@ -362,6 +411,7 @@ void main() {
       await tester.tap(find.text('退出登录'));
       await settle(tester);
       expect(find.text('退出 ChatGPT？'), findsOneWidget);
+      expect(find.text(appL10n.engineSubscriptionSignOutBody), findsNothing);
       await tester.tap(find.text('取消'));
       await settle(tester);
       expect(bridge.calls, isNot(contains('signOut:openai-codex')));

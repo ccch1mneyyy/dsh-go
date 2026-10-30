@@ -1,4 +1,4 @@
-/// Subscription sign-in (ChatGPT, Claude) through dsh-app's engine-side auth
+/// Subscription sign-in (ChatGPT, Claude, Grok) through dsh-app's engine-side auth
 /// bridge (`@dsh-app/auth`, service `appAuth`).
 ///
 /// DSH 0.2.1 already carries both sign-in flows: the built-in `llm-pi-ai`
@@ -17,7 +17,7 @@
 /// Polling (not a stream) so it works the same over every carrier. Once an
 /// attempt is `done`, the bridge has also declared the route
 /// (`llm-pi-ai.providers.<id>`) so its models show up in the catalog;
-/// [DshSubscriptions.signOut] removes both.
+/// [DshSubscriptions.signOut] deletes the grant and keeps the route settings.
 library;
 
 import 'json.dart';
@@ -26,7 +26,8 @@ import 'session_api.dart';
 /// A subscription the bridge can sign in to.
 enum Subscription {
   chatgpt('openai-codex'),
-  claude('anthropic');
+  claude('anthropic'),
+  grok('xai');
 
   const Subscription(this.wire);
 
@@ -138,6 +139,6 @@ extension DshSubscriptions on DshClient {
   /// `appAuth/cancel`: abandons an attempt (no-op once finished).
   Future<void> cancelLogin(String attemptId) => rpc.call('appAuth/cancel', {'attemptId': attemptId});
 
-  /// `appAuth/signOut`: deletes the grant and the route.
+  /// `appAuth/signOut`: deletes the grant, preserving the route settings.
   Future<void> signOut(Subscription subscription) => rpc.call('appAuth/signOut', {'provider': subscription.wire});
 }

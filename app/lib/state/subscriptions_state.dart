@@ -16,6 +16,7 @@ export 'package:dsh_client/dsh_client.dart' show LoginPhase, LoginStep, Subscrip
 String subscriptionLabel(Subscription s) => switch (s) {
   Subscription.chatgpt => 'ChatGPT',
   Subscription.claude => 'Claude',
+  Subscription.grok => 'Grok',
 };
 
 /// One short line for a failure of the bridge itself (not of the provider's

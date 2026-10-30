@@ -276,17 +276,29 @@ class ProviderSettings {
     this.writable = true,
     this.userRoutes = const {},
     this.baseRoutes = const {},
+    this.displayNameOnlyRoutes = const {},
   });
 
   factory ProviderSettings.fromSection(SettingsSection section) {
     Set<String> routes(Map<String, Object?>? layer) => asMapOrEmpty(layer?['providers']).keys.toSet();
     final providers = asMapOrEmpty(section.value['providers']);
+    bool displayNameOnly(String route) {
+      final base = asMap(asMapOrEmpty(section.base?['providers'])[route]);
+      final user = asMap(asMapOrEmpty(section.user?['providers'])[route]);
+      return (base != null || user != null) &&
+          {...?base?.keys, ...?user?.keys}.every((field) => field == 'displayName');
+    }
+
     return ProviderSettings(
       profiles: [for (final entry in providers.entries) ProviderProfile.fromJson(entry.key, entry.value)],
       revision: section.revision,
       writable: section.writable,
       userRoutes: routes(section.user),
       baseRoutes: routes(section.base),
+      displayNameOnlyRoutes: {
+        for (final route in providers.keys)
+          if (displayNameOnly(route)) route,
+      },
     );
   }
 
@@ -300,6 +312,11 @@ class ProviderSettings {
   /// Routes the composition base declares (a home patch): removing the user
   /// layer brings those back.
   final Set<String> baseRoutes;
+
+  /// Routes with no declared settings beyond a display name. Inspect both
+  /// layers so schema defaults and unmodelled custom fields do not mislead UI.
+  /// This describes configuration shape, not who created the route.
+  final Set<String> displayNameOnlyRoutes;
 
   ProviderProfile? byRoute(String route) {
     for (final p in profiles) {

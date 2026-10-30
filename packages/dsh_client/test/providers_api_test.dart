@@ -107,6 +107,67 @@ void main() {
   });
 
   group('read', () {
+    test('bare catalog routes ignore resolved defaults but retain custom settings from either layer', () {
+      for (final subscription in Subscription.values) {
+        final route = subscription.wire;
+        ProviderSettings read(Map<String, Object?>? user, {Map<String, Object?>? base}) => ProviderSettings.fromSection(
+          SettingsSection(
+            ns: piAiSettingsNs,
+            revision: 1,
+            value: {
+              'providers': {
+                route: {
+                  'displayName': 'Subscription',
+                  'defaultContextWindow': 262144,
+                  'streamIdleTimeoutMs': 60000,
+                  ...?base,
+                  ...?user,
+                },
+              },
+            },
+            user: user == null
+                ? null
+                : {
+                    'providers': {route: user},
+                  },
+            base: base == null
+                ? null
+                : {
+                    'providers': {route: base},
+                  },
+          ),
+        );
+
+        expect(read({'displayName': 'Subscription'}).displayNameOnlyRoutes, {route});
+        expect(read(null).displayNameOnlyRoutes, isEmpty, reason: 'unknown source stays visible');
+        for (final custom in <Map<String, Object?>>[
+          {'baseURL': 'https://example.invalid/v1'},
+          {
+            'models': [
+              {'id': 'custom-model'},
+            ],
+          },
+          {
+            'modelOverrides': {
+              'catalog-model': {'maxTokens': 1024},
+            },
+          },
+          {
+            'headers': {'X-Team': 'custom'},
+          },
+          {'apiKeyEnv': 'MY_KEY'},
+          {'futureOption': true},
+        ]) {
+          expect(read(custom).displayNameOnlyRoutes, isEmpty, reason: '$route: $custom');
+          expect(
+            read({'displayName': 'Subscription'}, base: custom).displayNameOnlyRoutes,
+            isEmpty,
+            reason: 'base configuration also stays visible: $route: $custom',
+          );
+        }
+      }
+    });
+
     test('providerSettings reads profiles, layers and writability', () async {
       host.handlers['settings/describe'] = (_) => ok({
         'writable': true,

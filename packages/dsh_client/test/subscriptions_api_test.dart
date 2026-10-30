@@ -52,20 +52,23 @@ void main() {
     test('wire ids are the pi-ai provider ids', () {
       expect(Subscription.chatgpt.wire, 'openai-codex');
       expect(Subscription.claude.wire, 'anthropic');
+      expect(Subscription.grok.wire, 'xai');
       expect(Subscription.fromWire('openai-codex'), Subscription.chatgpt);
       expect(Subscription.fromWire('anthropic'), Subscription.claude);
+      expect(Subscription.fromWire('xai'), Subscription.grok);
       expect(Subscription.fromWire('openai'), isNull);
       expect(Subscription.fromWire(null), isNull);
     });
   });
 
   group('appAuth/list', () {
-    test('both providers, with the account when the grant names one', () async {
+    test('supported providers, with the account when the grant names one', () async {
       final carrier = _ScriptedCarrier({
         'appAuth/list': (_) => ok({
           'providers': [
             {'id': 'openai-codex', 'signedIn': true, 'account': 'tester@example.invalid'},
             {'id': 'anthropic', 'signedIn': false},
+            {'id': 'xai', 'signedIn': true},
           ],
         }),
       });
@@ -74,11 +77,12 @@ void main() {
       expect(_sent(carrier), [
         ['appAuth/list', <String, Object?>{}],
       ]);
-      expect(list.map((s) => s.subscription), [Subscription.chatgpt, Subscription.claude]);
+      expect(list.map((s) => s.subscription), [Subscription.chatgpt, Subscription.claude, Subscription.grok]);
       expect(list[0].signedIn, isTrue);
       expect(list[0].account, 'tester@example.invalid');
       expect(list[1].signedIn, isFalse);
       expect(list[1].account, isNull);
+      expect(list[2].signedIn, isTrue);
     });
 
     test('unknown ids, malformed entries and non-true flags are dropped or read as signed out', () async {
@@ -131,6 +135,7 @@ void main() {
       final client = DshClient.withCarrier(carrier);
       expect(await client.beginLogin(Subscription.chatgpt), 'cbf52a89-d780-4f71-a08a-c78446e8c86b');
       expect(await client.beginLogin(Subscription.claude), 'cbf52a89-d780-4f71-a08a-c78446e8c86b');
+      expect(await client.beginLogin(Subscription.grok), 'cbf52a89-d780-4f71-a08a-c78446e8c86b');
       expect(_sent(carrier), [
         [
           'appAuth/begin',
@@ -139,6 +144,10 @@ void main() {
         [
           'appAuth/begin',
           {'provider': 'anthropic'},
+        ],
+        [
+          'appAuth/begin',
+          {'provider': 'xai'},
         ],
       ]);
     });
@@ -272,6 +281,7 @@ void main() {
       await client.cancelLogin('a1');
       await client.signOut(Subscription.chatgpt);
       await client.signOut(Subscription.claude);
+      await client.signOut(Subscription.grok);
       expect(_sent(carrier), [
         [
           'appAuth/answer',
@@ -288,6 +298,10 @@ void main() {
         [
           'appAuth/signOut',
           {'provider': 'anthropic'},
+        ],
+        [
+          'appAuth/signOut',
+          {'provider': 'xai'},
         ],
       ]);
     });

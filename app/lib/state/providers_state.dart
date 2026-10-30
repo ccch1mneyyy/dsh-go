@@ -29,12 +29,10 @@ export 'provider_backend.dart';
 
 // ── Model ────────────────────────────────────────────────────────────────────
 
-/// A route the subscription sign-in bridge declared (`openai-codex`,
-/// `anthropic`), authenticated by the stored grant, no key reference. Shown
-/// with the subscriptions, not as a custom provider. A same-named route with
-/// a key reference is an ordinary key-based provider.
-bool isSubscriptionRoute(ProviderProfile profile) =>
-    Subscription.fromWire(profile.route) != null && (profile.apiKeyEnv == null || profile.apiKeyEnv!.isEmpty);
+/// A bare catalog route is represented by its subscription row. Keep routes
+/// with any additional configuration visible, including keyless custom routes.
+bool isSubscriptionRoute(ProviderProfile profile, ProviderSettings settings) =>
+    Subscription.fromWire(profile.route) != null && settings.displayNameOnlyRoutes.contains(profile.route);
 
 /// 协议在界面上的名字。
 String protocolLabel(ProviderApi api) => switch (api) {
@@ -450,7 +448,7 @@ final customProvidersProvider = FutureProvider.autoDispose<ProvidersSnapshot?>((
       revision: settings.revision,
       providers: [
         for (final p in settings.profiles)
-          if (!isSubscriptionRoute(p)) CustomProvider.fromProfile(p, removable: settings.removable(p.route)),
+          if (!isSubscriptionRoute(p, settings)) CustomProvider.fromProfile(p, removable: settings.removable(p.route)),
       ],
       credentials: credentials,
       registered: registered,

@@ -41,7 +41,6 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(context.l10n.engineSubscriptionSignOutTitle(_label)),
-        content: Text(context.l10n.engineSubscriptionSignOutBody),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialog, false), child: Text(context.l10n.commonCancel)),
           FilledButton(
