@@ -1,0 +1,229 @@
+--- a/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js
++++ b/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js
+@@ -1074,7 +1074,8 @@
+ 	timeoutMs: z.natural(),
+ 	websocketConnectTimeoutMs: z.natural(),
+ 	streamIdleTimeoutMs: z.number().min(Number.MIN_VALUE).max(MAX_TIMER_DELAY_MS).default(DEFAULT_STREAM_IDLE_TIMEOUT_MS),
+-	maxRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),
++	maxRequestImageBytes: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),
++	requestImageOffloadByteQuantum: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER),
+ 	requestImagePixelBudget: z.number().step(1).min(1).default(DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET),
+ 	requestImageMaxBytes: z.number().step(1).min(1).default(DEFAULT_REQUEST_IMAGE_MAX_BYTES),
+ 	retryPolicy: RetryPolicySchema
+@@ -1127,7 +1128,9 @@
+ 		const streamIdleTimeoutMs = source.streamIdleTimeoutMs ?? 3e5;
+ 		if (!Number.isFinite(streamIdleTimeoutMs) || streamIdleTimeoutMs <= 0 || streamIdleTimeoutMs > MAX_TIMER_DELAY_MS) throw new Error(`llm-pi-ai: provider "${provider}" streamIdleTimeoutMs must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`);
+ 		const maxRequestImageBytes = source.maxRequestImageBytes ?? 20971520;
+-		if (!Number.isInteger(maxRequestImageBytes) || maxRequestImageBytes <= 0) throw new Error(`llm-pi-ai: provider "${provider}" maxRequestImageBytes must be a positive integer`);
++		if (!Number.isSafeInteger(maxRequestImageBytes) || maxRequestImageBytes <= 0) throw new Error(`llm-pi-ai: provider "${provider}" maxRequestImageBytes must be a positive safe integer`);
++		const requestImageOffloadByteQuantum = source.requestImageOffloadByteQuantum ?? Math.max(1, Math.min(5 * 1024 * 1024, Math.floor(maxRequestImageBytes / 4)));
++		if (!Number.isSafeInteger(requestImageOffloadByteQuantum) || requestImageOffloadByteQuantum <= 0 || requestImageOffloadByteQuantum > maxRequestImageBytes) throw new Error(`llm-pi-ai: provider "${provider}" requestImageOffloadByteQuantum must be a positive safe integer no greater than maxRequestImageBytes`);
+ 		const requestImagePixelBudget = source.requestImagePixelBudget ?? 4194304;
+ 		if (!Number.isSafeInteger(requestImagePixelBudget) || requestImagePixelBudget <= 0) throw new Error(`llm-pi-ai: provider "${provider}" requestImagePixelBudget must be a positive safe integer`);
+ 		const requestImageMaxBytes = source.requestImageMaxBytes ?? 1048576;
+@@ -1171,6 +1174,7 @@
+ 			...apiKeyEnv === void 0 ? {} : { apiKeyEnv: credentialRef(apiKeyEnv) },
+ 			streamIdleTimeoutMs,
+ 			maxRequestImageBytes,
++			requestImageOffloadByteQuantum,
+ 			requestImagePixelBudget,
+ 			requestImageMaxBytes,
+ 			retryPolicy: resolveRetryPolicy(retryPolicy, `llm-pi-ai: provider "${provider}" retryPolicy`),
+@@ -1395,11 +1399,29 @@
+ 	const split = splitSystemPrompt(options);
+ 	const requestImages = await prepareRequestImages(split.messages, attachments, requestImagePolicy, options.signal);
+ 	if (maxRequestImageBytes !== void 0) {
+-		const offloadImages = requiredImageOffload(split.messages, {
++		const versionBytes = (block) => requestImages.get(block.attachment.attachmentId).data.byteLength;
++		const minimumOffloadImages = requiredImageOffload(split.messages, {
+ 			representation: "base64",
+ 			maxBytes: maxRequestImageBytes
+-		}, (block) => requestImages.get(block.attachment.attachmentId).bytes);
+-		if (offloadImages > 0) throw new LlmError(`pi-ai request images exceed the ${maxRequestImageBytes}-byte base64 bound; ${offloadImages} more oldest occurrence(s) must be offloaded.`, IMAGE_OFFLOAD_REQUIRED_CODE, { offloadImages });
++		}, versionBytes);
++		if (minimumOffloadImages > 0) {
++			let retainedImageCount = 0;
++			let requestImageBytes = 0;
++			for (const message of split.messages) for (const block of message.content) if (block.type === "image" && block.offloaded !== true) {
++				retainedImageCount += 1;
++				requestImageBytes += Math.ceil(versionBytes(block) / 3) * 4;
++			}
++			const quantum = images.requestImageOffloadByteQuantum ?? Math.max(1, Math.min(5 * 1024 * 1024, Math.floor(maxRequestImageBytes / 4)));
++			const target = maxRequestImageBytes - (quantum === 1 ? 0 : quantum);
++			const batchOffloadImages = requiredImageOffload(split.messages, {
++				representation: "base64",
++				maxBytes: target
++			}, versionBytes);
++			// Reserve is best-effort: never offload the newest retained input occurrence.
++			const offloadImages = Math.min(batchOffloadImages, retainedImageCount - 1);
++			if (offloadImages < minimumOffloadImages) throw new LlmError(`pi-ai newest retained image alone exceeds the ${maxRequestImageBytes}-byte base64 bound (${retainedImageCount} retained occurrence(s), ${requestImageBytes} base64 bytes total; low-water target ${target}); reduce requestImageMaxBytes or increase maxRequestImageBytes.`, "INVALID_REQUEST");
++			throw new LlmError(`pi-ai request images total ${requestImageBytes} base64 bytes, exceeding the ${maxRequestImageBytes}-byte bound; ${offloadImages} of ${retainedImageCount} oldest retained occurrence(s) must be offloaded toward the ${target}-byte low-water target while preserving the newest image.`, IMAGE_OFFLOAD_REQUIRED_CODE, { offloadImages });
++		}
+ 	}
+ 	const exactMessages = projectOffloadedImages(split.messages, (ref) => offloadedImageText(ref, resolveImageAccess(ref)));
+ 	const toolNames = /* @__PURE__ */ new Map();
+@@ -1975,6 +1997,7 @@
+ 					attachments,
+ 					resolveImageAccess: (ref) => this.config.resolveImageAccess?.(attachments, ref),
+ 					maxRequestImageBytes: profile.maxRequestImageBytes,
++					requestImageOffloadByteQuantum: profile.requestImageOffloadByteQuantum,
+ 					requestImagePolicy: {
+ 						maxPixels: profile.requestImagePixelBudget,
+ 						maxBytes: profile.requestImageMaxBytes
+--- a/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/types/config.d.ts
++++ b/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/types/config.d.ts
+@@ -133,6 +133,13 @@
+      * requests instead of being rejected by a request-size cap.
+      */
+     maxRequestImageBytes?: number;
++    /**
++     * Positive safe-integer base64 reserve, no greater than maxRequestImageBytes.
++     * Defaults to max(1, min(5 MiB, floor(maxRequestImageBytes / 4))). Only after
++     * exceeding the hard bound, offload toward bound minus reserve, preserving
++     * the newest retained image. Set 1 to offload only the minimum needed.
++     */
++    requestImageOffloadByteQuantum?: number;
+     /** Total-pixel budget for each deterministic inline request version. */
+     requestImagePixelBudget?: number;
+     /**
+@@ -153,8 +160,10 @@
+     apiKeyEnv?: CredentialRef;
+     /** Positive finite provider-idle interval after defaulting. */
+     streamIdleTimeoutMs: number;
+-    /** Positive request-level base64 image payload bound after defaulting. */
++    /** Positive safe-integer request-level base64 image payload bound after defaulting. */
+     maxRequestImageBytes: number;
++    /** Validated base64 low-water reserve after provider-relative defaulting. */
++    requestImageOffloadByteQuantum: number;
+     /** Positive total-pixel request-version budget after defaulting. */
+     requestImagePixelBudget: number;
+     /** Positive raw request-version byte target after defaulting; the smallest quality-ladder output is used when no quality fits. */
+@@ -217,102 +226,106 @@
+         websocketConnectTimeoutMs?: number | null;
+         streamIdleTimeoutMs?: number | null;
+         maxRequestImageBytes?: number | null;
++        requestImageOffloadByteQuantum?: number | null;
+         requestImagePixelBudget?: number | null;
+         requestImageMaxBytes?: number | null;
+         retryPolicy?: RetryPolicyConfig | null;
+     } & import("@deepseek-ai/cosmokit").Dict, string>>, NoInfer<import("@deepseek-ai/cosmokit").Dict<Schemastery.ObjectT<NoInfer<{
+         apiKeyEnv: z<string, string, "plain">;
+         displayName: z<string, string, "plain">;
+         api: z<string, string, "plain">;
+         baseURL: z<string, string, "plain">;
+         models: z<PiAiModelProfile[], PiAiModelProfile[], "plain">;
+         modelOverrides: z<import("@deepseek-ai/cosmokit").Dict<PiAiModelOverride, string>, import("@deepseek-ai/cosmokit").Dict<PiAiModelOverride, string>, "plain">;
+         compat: z<PiAiCompatProfile>;
+         defaultContextWindow: z<number, number, "defined">;
+         defaultMaxTokens: z<number, number, "defined">;
+         defaultInput: z<("text" | "image")[], ("text" | "image")[], "defined">;
+         headers: z<import("@deepseek-ai/cosmokit").Dict<string, string>, import("@deepseek-ai/cosmokit").Dict<string, string>, "plain">;
+         reasoning: z<"off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", "plain">;
+         thinkingBudgets: z<Schemastery.ObjectS<NoInfer<{
+             minimal: z<number, number, "plain">;
+             low: z<number, number, "plain">;
+             medium: z<number, number, "plain">;
+             high: z<number, number, "plain">;
+         }>>, Schemastery.ObjectT<NoInfer<{
+             minimal: z<number, number, "plain">;
+             low: z<number, number, "plain">;
+             medium: z<number, number, "plain">;
+             high: z<number, number, "plain">;
+         }>>, "plain">;
+         cacheRetention: z<"none" | "short" | "long", "none" | "short" | "long", "plain">;
+         transport: z<"auto" | "sse" | "websocket" | "websocket-cached", "auto" | "sse" | "websocket" | "websocket-cached", "plain">;
+         timeoutMs: z<number, number, "plain">;
+         websocketConnectTimeoutMs: z<number, number, "plain">;
+         streamIdleTimeoutMs: z<number, number, "defined">;
+         maxRequestImageBytes: z<number, number, "defined">;
++        requestImageOffloadByteQuantum: z<number, number, "plain">;
+         requestImagePixelBudget: z<number, number, "defined">;
+         requestImageMaxBytes: z<number, number, "defined">;
+         retryPolicy: z<RetryPolicyConfig>;
+     }>>, string>>, "volatile-defined">;
+ }>>, Schemastery.ObjectT<NoInfer<{
+     providers: z<NoInfer<import("@deepseek-ai/cosmokit").Dict<{
+         apiKeyEnv?: string | null;
+         displayName?: string | null;
+         api?: string | null;
+         baseURL?: string | null;
+         models?: PiAiModelProfile[] | null;
+         modelOverrides?: import("@deepseek-ai/cosmokit").Dict<PiAiModelOverride, string> | null;
+         compat?: PiAiCompatProfile | null;
+         defaultContextWindow?: number | null;
+         defaultMaxTokens?: number | null;
+         defaultInput?: ("text" | "image")[] | null;
+         headers?: import("@deepseek-ai/cosmokit").Dict<string, string> | null;
+         reasoning?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
+         thinkingBudgets?: ({
+             minimal?: number | null;
+             low?: number | null;
+             medium?: number | null;
+             high?: number | null;
+         } & import("@deepseek-ai/cosmokit").Dict) | null;
+         cacheRetention?: "none" | "short" | "long" | null;
+         transport?: "auto" | "sse" | "websocket" | "websocket-cached" | null;
+         timeoutMs?: number | null;
+         websocketConnectTimeoutMs?: number | null;
+         streamIdleTimeoutMs?: number | null;
+         maxRequestImageBytes?: number | null;
++        requestImageOffloadByteQuantum?: number | null;
+         requestImagePixelBudget?: number | null;
+         requestImageMaxBytes?: number | null;
+         retryPolicy?: RetryPolicyConfig | null;
+     } & import("@deepseek-ai/cosmokit").Dict, string>>, NoInfer<import("@deepseek-ai/cosmokit").Dict<Schemastery.ObjectT<NoInfer<{
+         apiKeyEnv: z<string, string, "plain">;
+         displayName: z<string, string, "plain">;
+         api: z<string, string, "plain">;
+         baseURL: z<string, string, "plain">;
+         models: z<PiAiModelProfile[], PiAiModelProfile[], "plain">;
+         modelOverrides: z<import("@deepseek-ai/cosmokit").Dict<PiAiModelOverride, string>, import("@deepseek-ai/cosmokit").Dict<PiAiModelOverride, string>, "plain">;
+         compat: z<PiAiCompatProfile>;
+         defaultContextWindow: z<number, number, "defined">;
+         defaultMaxTokens: z<number, number, "defined">;
+         defaultInput: z<("text" | "image")[], ("text" | "image")[], "defined">;
+         headers: z<import("@deepseek-ai/cosmokit").Dict<string, string>, import("@deepseek-ai/cosmokit").Dict<string, string>, "plain">;
+         reasoning: z<"off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", "plain">;
+         thinkingBudgets: z<Schemastery.ObjectS<NoInfer<{
+             minimal: z<number, number, "plain">;
+             low: z<number, number, "plain">;
+             medium: z<number, number, "plain">;
+             high: z<number, number, "plain">;
+         }>>, Schemastery.ObjectT<NoInfer<{
+             minimal: z<number, number, "plain">;
+             low: z<number, number, "plain">;
+             medium: z<number, number, "plain">;
+             high: z<number, number, "plain">;
+         }>>, "plain">;
+         cacheRetention: z<"none" | "short" | "long", "none" | "short" | "long", "plain">;
+         transport: z<"auto" | "sse" | "websocket" | "websocket-cached", "auto" | "sse" | "websocket" | "websocket-cached", "plain">;
+         timeoutMs: z<number, number, "plain">;
+         websocketConnectTimeoutMs: z<number, number, "plain">;
+         streamIdleTimeoutMs: z<number, number, "defined">;
+         maxRequestImageBytes: z<number, number, "defined">;
++        requestImageOffloadByteQuantum: z<number, number, "plain">;
+         requestImagePixelBudget: z<number, number, "defined">;
+         requestImageMaxBytes: z<number, number, "defined">;
+         retryPolicy: z<RetryPolicyConfig>;
+--- a/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/types/context.d.ts
++++ b/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/types/context.d.ts
+@@ -14,6 +14,8 @@
+     resolveImageAccess: ImageAttachmentAccessResolver;
+     /** Request-level bound on the base64-encoded payload of retained images; omission leaves the bound unchecked. */
+     maxRequestImageBytes?: number;
++    /** Base64 low-water reserve; provider-relative default, with 1 selecting minimum offload. */
++    requestImageOffloadByteQuantum?: number;
+     /** Route pixel and raw encoded-byte budgets. */
+     requestImagePolicy?: PiImageRequestBudget;
+ }
+@@ -47,7 +49,9 @@
+  * occurrences the surface marks offloaded become text placeholders; when the
+  * retained occurrences' exact base64 payload still exceeds
+  * `maxRequestImageBytes`, the call fails with `IMAGE_OFFLOAD_REQUIRED` naming
+- * how many more oldest occurrences must be offloaded.
++ * how many more oldest occurrences must be offloaded toward the low-water
++ * target, always preserving the newest retained occurrence. If that image
++ * alone exceeds the hard bound, the call fails with `INVALID_REQUEST`.
+  * @param options - projected request; one-shot system text precedes the leading history prompt.
+  * @param images - attachment provider, current path resolver, and request limits.
+  * @param onReplayDegrade - forwarded to {@link toPiAssistant} for each assistant message.

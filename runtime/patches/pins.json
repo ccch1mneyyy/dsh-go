@@ -14,6 +14,22 @@
         }
       }
     },
+    "image-offload-cache.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js": {
+          "after": "684201971db3428e367dcc18f0858168a17f935ddab0b5f65ea2517d5f8a927f",
+          "before": "99b5c20830a52f69641df8a18a39206079b0c725201958cce2c4a934f1d4f7cd"
+        },
+        "node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/types/config.d.ts": {
+          "after": "2762a5daad60c47beaf86739e2fad07003f3ffe421377bb34a85f9c0314ae522",
+          "before": "f2fe4648c1500d12be159e151b41b4045fd517a8d3ab4dd56658f9ef97a05a09"
+        },
+        "node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/types/context.d.ts": {
+          "after": "79b568edb2cfc5181d079549d8f4f5aa6af53bfd9f46845dd0a7ffefe0e98409",
+          "before": "e7db4727c750e9a9959a01779c6a4f7fbdc6e19818f0e1a62ac24e44be8c6a3e"
+        }
+      }
+    },
     "plugin-manager-active-run-guard.diff": {
       "0.2.1-rc.4": {
         "node_modules/@deepseek-ai/dsh-plugin-manager/lib/index.js": {
