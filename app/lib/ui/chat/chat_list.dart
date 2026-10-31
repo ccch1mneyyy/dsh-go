@@ -31,6 +31,7 @@ import '../theme/app_icons.dart';
 import '../theme/theme.dart';
 import '../update/update_sheet.dart' show checkForUpdates;
 import 'chat_rows.dart';
+import 'chat_rows_cache.dart';
 import 'media/media_paths.dart';
 import 'composer_toast.dart';
 import 'dsh_ui/dsh_ui.dart';
@@ -186,6 +187,7 @@ class _ChatListState extends ConsumerState<ChatList> {
 
   // 行派生缓存:输入不变就不重算。
   List<ChatRow> _rows = const [];
+  final _rowCache = ChatRowsCache();
   Map<String, int> _index = const {};
   Object? _rowsInputs;
   Set<String> _autoAnswered = const {};
@@ -404,20 +406,13 @@ class _ChatListState extends ConsumerState<ChatList> {
     final previousLength = _rows.length;
     final previousKeys = _index;
     final hadPending = _rows.any((r) => r is PendingRow);
-    _rows = deriveRows(
-      items: s.items,
-      approvals: s.approvals,
-      questions: s.questions,
-      pending: s.pending,
-      running: s.running,
-      autoAnswered: s.autoAnswered,
-      commands: s.commands,
-      turns: s.turns,
+    _rows = _rowCache.update(
+      s,
       foldTurns: foldTurns,
       openTurns: _keepOpen,
       artifacts: artifacts,
     );
-    _index = {for (var i = 0; i < _rows.length; i++) _rows[i].key: i};
+    _index = _rowCache.index;
     // 被插话切开的轮:前几片的摘要行(`tp<轮起点>@<插话>`)跟最后一片一起收。
     // 这一帧没建出来的(在屏幕外)不留到以后:翻回去时不该再播一遍。
     for (final row in _rows) {
