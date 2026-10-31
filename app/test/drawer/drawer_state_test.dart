@@ -134,6 +134,32 @@ void main() {
       expect(blocks.whereType<FolderBlock>().map((f) => f.folder.id), ['f1']);
     });
 
+    test('folder buckets retain tie order, pin priority and the last assignment', () {
+      const view = DrawerView(
+        loaded: true,
+        folders: [
+          DrawerFolder(id: 'f1', name: 'First', sessionIds: ['a', 'b', 'c']),
+          // As folderOf specifies, the last assignment owns a duplicate.
+          DrawerFolder(id: 'f2', name: 'Second', sessionIds: ['d', 'c']),
+          DrawerFolder(id: 'f3', name: 'Empty', sessionIds: ['missing']),
+        ],
+      );
+      final blocks = _blocks(
+        sessions: [
+          for (final id in ['e', 'd', 'c', 'b', 'a']) _s(id, _now),
+        ],
+        view: view,
+        pinned: ['d', 'e', 'b', 'c', 'missing'],
+      );
+      expect(_ids(blocks.whereType<PinnedBlock>().single), ['e']);
+      final folders = blocks.whereType<FolderBlock>().toList();
+      expect(folders.map((f) => f.folder.id), ['f1', 'f2', 'f3']);
+      expect(_ids(folders[0]), ['b', 'a']);
+      expect(_ids(folders[1]), ['c', 'd']);
+      expect(folders[2].items, isEmpty);
+      expect([for (final block in blocks) ..._ids(block)], ['e', 'b', 'a', 'c', 'd']);
+    });
+
     test('filters give one flat block', () {
       expect(_ids(_blocks(filter: DrawerFilter.running).single), ['a']);
       expect(_ids(_blocks(filter: DrawerFilter.pending, pending: {'c': PendingKind.approval}).single), ['c']);

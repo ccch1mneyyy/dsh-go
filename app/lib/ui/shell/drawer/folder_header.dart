@@ -106,19 +106,26 @@ class DrawerFolderHeader extends StatelessWidget {
 /// A folder's members under its header, opening and closing with
 /// [ExpandReveal]. An empty folder says so on the members' line.
 class DrawerFolderBody extends StatelessWidget {
-  const DrawerFolderBody({super.key, required this.open, required this.children});
+  const DrawerFolderBody({super.key, required this.open, required this.childrenBuilder});
 
   final bool open;
-  final List<Widget> children;
+  final List<Widget> Function() childrenBuilder;
 
   @override
   Widget build(BuildContext context) {
     return ExpandReveal(
       open: open,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: children.isEmpty ? const [_EmptyFolderLine()] : children,
+      // ExpandReveal removes this subtree once closed. Defer constructing the
+      // member tiles too, including folders that start collapsed.
+      child: Builder(
+        builder: (_) {
+          final children = childrenBuilder();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: children.isEmpty ? const [_EmptyFolderLine()] : children,
+          );
+        },
       ),
     );
   }

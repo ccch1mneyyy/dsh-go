@@ -15,7 +15,6 @@ import '../../../state/sessions_state.dart';
 import '../../../state/workspaces_state.dart';
 import '../../common/empty_view.dart';
 import '../../theme/app_icons.dart';
-import '../../theme/theme.dart';
 import '../sessions_drawer.dart' show sessionTitle;
 import 'drawer_actions.dart';
 import 'folder_header.dart';
@@ -93,64 +92,83 @@ class DrawerConversationList extends ConsumerWidget {
       );
     }
 
-    final children = <Widget>[];
+    // Keep only builders for off-screen rows: preparing a title and a tile for
+    // every conversation makes even a selection change scale with the history.
+    final rows = <({Key key, WidgetBuilder builder})>[];
+    void add(Key key, WidgetBuilder builder) => rows.add((key: key, builder: builder));
+    void addSessions(List<SessionSummary> items) {
+      for (final s in items) {
+        add(ValueKey('session-${s.sessionId}'), (_) => tile(s));
+      }
+    }
+
+    final showLeading = leading != null && filter == DrawerFilter.all && !selecting;
+    if (showLeading) {
+      const key = ValueKey('leading');
+      add(key, (_) => KeyedSubtree(key: key, child: leading!));
+    }
     var foldersLabelled = false;
     for (final block in blocks) {
       switch (block) {
         case FilteredBlock(filter: final matching, :final items) when items.isEmpty:
-          children.add(_FilterEmpty(matching));
+          const key = ValueKey('filter-empty');
+          add(key, (_) => _FilterEmpty(matching, key: key));
         case FilteredBlock(:final items):
-          children.addAll(items.map(tile));
+          addSessions(items);
         case PinnedBlock(:final items):
-          children
-            ..add(DrawerEyebrow(l10n.commonPin))
-            ..addAll(items.map(tile));
+          const key = ValueKey('pinned-label');
+          add(key, (_) => DrawerEyebrow(l10n.commonPin, key: key));
+          addSessions(items);
         case FolderBlock(:final folder, :final items):
           if (!foldersLabelled) {
             foldersLabelled = true;
-            children.add(DrawerEyebrow(l10n.shellFolders));
+            const key = ValueKey('folders-label');
+            add(key, (_) => DrawerEyebrow(l10n.shellFolders, key: key));
           }
-          children
-            ..add(
-              DrawerFolderHeader(
-                key: ValueKey('folder-${folder.id}'),
-                folder: folder,
-                count: items.length,
-                onTap: () => ref.read(drawerViewProvider.notifier).toggleCollapsed(folder.id),
-                onLongPress: () {
-                  if (!readOnly) folderActionsFlow(context, ref, folder);
-                },
-              ),
-            )
-            ..add(
-              DrawerFolderBody(
-                key: ValueKey('folder-body-${folder.id}'),
-                open: !folder.collapsed,
-                children: [for (final s in items) tile(s, inFolder: true)],
-              ),
-            );
+          final headerKey = ValueKey('folder-${folder.id}');
+          add(
+            headerKey,
+            (_) => DrawerFolderHeader(
+              key: headerKey,
+              folder: folder,
+              count: items.length,
+              onTap: () => ref.read(drawerViewProvider.notifier).toggleCollapsed(folder.id),
+              onLongPress: () {
+                if (!readOnly) folderActionsFlow(context, ref, folder);
+              },
+            ),
+          );
+          final bodyKey = ValueKey('folder-body-${folder.id}');
+          add(
+            bodyKey,
+            (_) => DrawerFolderBody(
+              key: bodyKey,
+              open: !folder.collapsed,
+              childrenBuilder: () => [for (final s in items) tile(s, inFolder: true)],
+            ),
+          );
         case DayBlock(:final day, :final items):
-          children
-            ..add(DrawerEyebrow(sessionDayLabels[day]!))
-            ..addAll(items.map(tile));
+          final key = ValueKey('day-${day.name}');
+          add(key, (_) => DrawerEyebrow(sessionDayLabels[day]!, key: key));
+          addSessions(items);
       }
     }
-    final showLeading = leading != null && filter == DrawerFilter.all && !selecting;
-    return AnimatedSwitcher(
-      duration: AppMotion.of(context, AppMotion.quick),
-      layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
-      child: ListView(
-        key: ValueKey(filter),
-        padding: padding,
-        children: [?(showLeading ? leading : null), ...children],
-      ),
+    // Preserve keyed row/folder state when pinning, sorting or hiding the
+    // leading row changes indices. A new filter still starts at the top.
+    final indices = {for (var i = 0; i < rows.length; i++) rows[i].key: i};
+    return ListView.builder(
+      key: ValueKey(filter),
+      padding: padding,
+      itemCount: rows.length,
+      itemBuilder: (context, index) => rows[index].builder(context),
+      findChildIndexCallback: (key) => indices[key],
     );
   }
 }
 
 /// A status filter with no matches.
 class _FilterEmpty extends StatelessWidget {
-  const _FilterEmpty(this.filter);
+  const _FilterEmpty(this.filter, {super.key});
 
   final DrawerFilter filter;
 

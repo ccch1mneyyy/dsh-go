@@ -680,11 +680,13 @@ List<DrawerBlock> drawerBlocks({
       if (byId[id] case final s? when !folderOf.containsKey(id)) s,
   ];
   if (pinned.isNotEmpty) blocks.add(PinnedBlock(pinned));
+  final membersByFolder = <String, List<SessionSummary>>{};
+  for (final s in sorted) {
+    final folderId = folderOf[s.sessionId];
+    if (folderId != null) membersByFolder.putIfAbsent(folderId, () => []).add(s);
+  }
   for (final folder in view.folders) {
-    final members = [
-      for (final s in sorted)
-        if (folderOf[s.sessionId] == folder.id) s,
-    ];
+    final members = membersByFolder[folder.id] ?? const <SessionSummary>[];
     if (members.isEmpty && scoped) continue;
     blocks.add(
       FolderBlock(folder, [
