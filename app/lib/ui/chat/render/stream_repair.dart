@@ -21,7 +21,40 @@
 /// Only the last block is looked at; everything before it is final.
 String repairStreamingMarkdown(String text) {
   if (text.isEmpty) return text;
-  final scan = _BlockScan(text);
+  return _repairWithScan(text, _BlockScan(text));
+}
+
+/// The same repair as [repairStreamingMarkdown], retaining the scan of complete
+/// lines while text is appended. The unfinished last line is always rescanned:
+/// appending to a fence closer can turn it back into ordinary code.
+///
+/// Input is the prepared Markdown, not the raw reply. If maths or table
+/// preparation rewrites an earlier line (or the reply is replaced/truncated),
+/// the prefix no longer matches and the whole scan starts again.
+class StreamingMarkdownRepair {
+  String _previous = '';
+  var _offset = 0;
+  var _prefix = _BlockScan.empty();
+
+  String repair(String text) {
+    if (!text.startsWith(_previous)) {
+      _offset = 0;
+      _prefix = _BlockScan.empty();
+    }
+    _previous = text;
+    if (text.isEmpty) return text;
+    for (var end = text.indexOf('\n', _offset); end != -1; end = text.indexOf('\n', _offset)) {
+      _prefix.addLine(text.substring(_offset, end), _offset);
+      _offset = end + 1;
+    }
+    final scan = _BlockScan.copy(_prefix);
+    if (_offset < text.length) scan.addLine(text.substring(_offset), _offset);
+    if (scan.lastBlockStart > text.length) scan.lastBlockStart = text.length;
+    return _repairWithScan(text, scan);
+  }
+}
+
+String _repairWithScan(String text, _BlockScan scan) {
   if (scan.openFenceLine != null) {
     // Inside an open fence the code streams as itself, except the opening
     // line while its info string is still being typed.
@@ -40,36 +73,49 @@ String repairStreamingMarkdown(String text) {
 
 /// Where the last block starts and whether the text ends inside a fence.
 class _BlockScan {
+  _BlockScan.empty();
+
+  _BlockScan.copy(_BlockScan other)
+    : lastBlockStart = other.lastBlockStart,
+      _openFenceLine = other._openFenceLine,
+      _fenceChar = other._fenceChar,
+      _fenceLength = other._fenceLength;
+
   _BlockScan(String text) {
     var offset = 0;
-    String? fenceChar;
-    var fenceLength = 0;
     final lines = text.split('\n');
     // `abc\n` is one line, not a line and a blank one.
     if (lines.length > 1 && lines.last.isEmpty) lines.removeLast();
     for (final line in lines) {
-      final fence = _fence.firstMatch(line);
-      if (fenceChar != null) {
-        final close = _fenceClose.firstMatch(line);
-        if (close != null && close.group(1)![0] == fenceChar && close.group(1)!.length >= fenceLength) {
-          fenceChar = null;
-          lastBlockStart = offset + line.length + 1;
-        }
-      } else if (fence != null) {
-        fenceChar = fence.group(1)![0];
-        fenceLength = fence.group(1)!.length;
-        openFenceLine = offset;
-      } else if (line.trim().isEmpty || line.replaceAll(RegExp(r'[\s>]'), '').isEmpty) {
-        lastBlockStart = offset + line.length + 1;
-      }
+      addLine(line, offset);
       offset += line.length + 1;
     }
-    if (fenceChar == null) openFenceLine = null;
     if (lastBlockStart > text.length) lastBlockStart = text.length;
   }
 
   int lastBlockStart = 0;
-  int? openFenceLine;
+  int? _openFenceLine;
+  String? _fenceChar;
+  int _fenceLength = 0;
+
+  int? get openFenceLine => _fenceChar == null ? null : _openFenceLine;
+
+  void addLine(String line, int offset) {
+    final fence = _fence.firstMatch(line);
+    if (_fenceChar != null) {
+      final close = _fenceClose.firstMatch(line);
+      if (close != null && close.group(1)![0] == _fenceChar && close.group(1)!.length >= _fenceLength) {
+        _fenceChar = null;
+        lastBlockStart = offset + line.length + 1;
+      }
+    } else if (fence != null) {
+      _fenceChar = fence.group(1)![0];
+      _fenceLength = fence.group(1)!.length;
+      _openFenceLine = offset;
+    } else if (line.trim().isEmpty || line.replaceAll(RegExp(r'[\s>]'), '').isEmpty) {
+      lastBlockStart = offset + line.length + 1;
+    }
+  }
 
   static final _fence = RegExp(r'^[ \t]*(?:>[ \t]?)*[ \t]*(`{3,}|~{3,})(?!.*`)');
   static final _fenceClose = RegExp(r'^[ \t]*(?:>[ \t]?)*[ \t]*(`{3,}|~{3,})[ \t]*$');

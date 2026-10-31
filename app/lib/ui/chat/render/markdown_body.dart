@@ -465,10 +465,12 @@ class MarkdownBody extends StatefulWidget {
   /// table headers bold and, while [streaming], the unfinished tail
   /// repaired and the cursor sentinel placed.
   @visibleForTesting
-  static String prepareSource(String text, {bool streaming = false}) {
+  static String prepareSource(String text, {bool streaming = false}) => _prepareSource(text, streaming: streaming);
+
+  static String _prepareSource(String text, {bool streaming = false, StreamingMarkdownRepair? repair}) {
     final source = boldTableHeaders(normalizeMath(text, streaming: streaming));
     if (!streaming) return source;
-    return _withCursor(repairStreamingMarkdown(source));
+    return _withCursor(repair?.repair(source) ?? repairStreamingMarkdown(source));
   }
 
   /// [text] with the cursor sentinel where the reader's eye is: at the end
@@ -502,16 +504,23 @@ class MarkdownBody extends StatefulWidget {
 }
 
 class _MarkdownBodyState extends State<MarkdownBody> {
+  StreamingMarkdownRepair? _repair;
+
   // Preparation depends only on text and streaming, not theme, text scale or
   // selection. Keep one result for this mounted body; unrelated stream rows
   // can rebuild its parent without rescanning the unchanged Markdown.
-  late String _source = MarkdownBody.prepareSource(widget.text, streaming: widget.streaming);
+  late String _source = _prepareSource();
+
+  String _prepareSource() {
+    _repair = widget.streaming ? (_repair ?? StreamingMarkdownRepair()) : null;
+    return MarkdownBody._prepareSource(widget.text, streaming: widget.streaming, repair: _repair);
+  }
 
   @override
   void didUpdateWidget(MarkdownBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text || oldWidget.streaming != widget.streaming) {
-      _source = MarkdownBody.prepareSource(widget.text, streaming: widget.streaming);
+      _source = _prepareSource();
     }
   }
 
