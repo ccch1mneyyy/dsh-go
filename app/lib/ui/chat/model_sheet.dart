@@ -700,7 +700,7 @@ class _ChannelChip extends StatelessWidget {
   }
 }
 
-/// 两列等宽的模型卡,同一行等高、间距 12;单数时最后一张占满整行。
+/// 单列等宽的模型卡,上下间距 12。名称可换行,完整显示。
 class _ModelGrid extends StatelessWidget {
   const _ModelGrid({super.key, required this.models, required this.selected, required this.onPick});
 
@@ -722,21 +722,9 @@ class _ModelGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < models.length; i += 2) ...[
+        for (var i = 0; i < models.length; i++) ...[
           if (i > 0) const SizedBox(height: gap),
-          if (i + 1 < models.length)
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: card(models[i])),
-                  const SizedBox(width: gap),
-                  Expanded(child: card(models[i + 1])),
-                ],
-              ),
-            )
-          else
-            card(models[i]),
+          card(models[i]),
         ],
       ],
     );
@@ -803,8 +791,6 @@ class _ModelCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(height: 1.35),
                       ),
                     ),

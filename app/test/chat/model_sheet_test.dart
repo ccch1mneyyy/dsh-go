@@ -301,9 +301,31 @@ void main() {
     });
   });
 
+  testWidgets('a long model name wraps instead of truncating', (tester) async {
+    const longName = 'DeepSeek-V4-Pro-Extra-Long-Reasoning-Edition-With-Many-More-Words';
+    final catalog = ModelCatalog(
+      defaultSelection: testCatalog.defaultSelection,
+      routableProviders: const ['deepseek'],
+      failures: const [],
+      groups: const [
+        ProviderGroup('deepseek', 'DeepSeek', [
+          ModelInfo(provider: 'deepseek', id: 'short', name: 'V4 Pro'),
+          ModelInfo(provider: 'deepseek', id: 'long', name: longName),
+        ]),
+      ],
+    );
+    await _openSheet(tester, _harness(catalog));
+
+    final shortCard = tester.getRect(_card('V4 Pro'));
+    final longCard = tester.getRect(_card(shortModelName(longName)));
+    // The wrapped name takes extra lines, so its card grows taller.
+    expect(longCard.height, greaterThan(shortCard.height));
+    expect(tester.takeException(), isNull);
+  });
+
   group('geometry', () {
     for (final scale in [1.0, 1.3]) {
-      testWidgets('20 in from both sides, equal cards (text ×$scale)', (tester) async {
+      testWidgets('20 in from both sides, stacked full-width cards (text ×$scale)', (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         await _openSheet(tester, _harness(multiCatalog));
@@ -311,19 +333,20 @@ void main() {
 
         final pro = tester.getRect(_card('V4 Pro'));
         final flash = tester.getRect(_card('V41 Flash'));
+        // Single column: every card spans the full sheet width.
         expect(pro.left, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
-        expect(width - flash.right, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
+        expect(width - pro.right, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
+        expect(flash.left, moreOrLessEquals(pro.left, epsilon: 0.5));
+        expect(flash.right, moreOrLessEquals(pro.right, epsilon: 0.5));
         expect(pro.width, moreOrLessEquals(flash.width, epsilon: 0.5));
-        expect(pro.height, moreOrLessEquals(flash.height, epsilon: 0.5));
-        expect(pro.top, moreOrLessEquals(flash.top, epsilon: 0.5));
-        expect(flash.left - pro.right, moreOrLessEquals(12, epsilon: 0.5));
+        expect(flash.top - pro.bottom, moreOrLessEquals(12, epsilon: 0.5));
 
         // Filter and effort pill span exactly the cards' width.
         final pills = find.byType(SegmentedPill<String>);
         for (var i = 0; i < pills.evaluate().length; i++) {
           final pill = tester.getRect(pills.at(i));
           expect(pill.left, moreOrLessEquals(pro.left, epsilon: 0.5));
-          expect(pill.right, moreOrLessEquals(flash.right, epsilon: 0.5));
+          expect(pill.right, moreOrLessEquals(pro.right, epsilon: 0.5));
         }
 
         // Removing the close key must also reclaim its column and gutter.
