@@ -21,6 +21,27 @@ The author kit for dsh-go native plugins. Zero runtime dependencies, Node 22.19+
 node sdk/plugin-kit/bin/check.mjs <plugin dir | package.json | view.json | -> [--load] [--json] [--lang en] [--budget toolCard|panel|strip] [--app x.y.z]
 ```
 
+```
+dsh-go-example-quick 0.1.0
+  Native UI shows (2 capsule(s) · 2 menu item(s))
+  Host half loaded: 4 item(s) ready
+```
+
+```
+broken-demo 0.0.1
+  error /dsh/bundle/patch: Bundle patch file ./missing.yml not found
+  Native UI shows (2 capsule(s) · 1 menu item(s) · 1 strip · 1 panel(s))
+    error /dshGo/contributes/composer.actions/1/id: id a is already used by composer.actions
+    note /dshGo/contributes/composer.actions/0/label: exceeds 10 characters for locale en-US; truncated
+    note /dshGo/icon: Unknown icon; drawn as the default icon
+  Host half loaded: 1 item(s) ready
+    error /runtime/inject: ctx.inject(['dshGo?']) never runs: cordis has no optional syntax; write ['dshGo']
+  View views/p.json (panel): renders, 3 problem(s)
+    error view.children[0].type: Unknown component "gauge"; available: stack, row, text, …
+    error view.children[1].value: Expected a string or number
+    note view.children[2].items[0].action: Invalid action id "bad id"; this element isn’t tappable
+```
+
 | Exit | Meaning |
 |---|---|
 | 0 | No errors (notes allowed) |
@@ -30,7 +51,7 @@ node sdk/plugin-kit/bin/check.mjs <plugin dir | package.json | view.json | -> [-
 
 - Manifest problems: JSON Pointers from `package.json`, with the bridge's English developer message (the app's plugin details page shows the same); the app's own findings (unknown icon) are localized.
 - View problems: the same paths and words as the app's plugin details page (`lib/messages.json` is synced from the app's ARB files; the app runs the `test/parity/` cases too).
-- Labels are measured in Chinese and English; `--load` loads your code with a temporary `DSH_HOME`.
+- Labels are measured in Chinese and English; `--load` loads your code with a temporary `DSH_HOME` and never touches your real DSH home directory.
 
 Option values must be complete: `--lang zh|en`, `--budget toolCard|panel|strip`, and `--app x.y.z`. Invalid arguments return 3; with `--json`, the diagnostic remains a JSON object. Multiple targets are checked separately, and an unreadable stdin does not prevent later files from being checked. Put filenames beginning with `-` after `--`, for example `node bin/check.mjs -- --view.json`.
 
@@ -60,7 +81,7 @@ host.emitEvent('session/event', session, event)
 | `node scripts/sync-messages.mjs` | The app's `view` / `plugview` ARB files changed |
 | `node scripts/gen-parity.mjs` | `lib/view-check.js` changed (after the app's parser did); review the diff |
 | `node scripts/sync-skill.mjs` | Any of the above, or `skill/`: rebuilds the app's bundled `dsh-go-plugin` skill |
-| `scripts/wire-check.sh` | To validate the schemas against real bridge traffic |
+| `scripts/wire-check.sh` | To validate the schemas against real bridge traffic: the protocol integration tests and the example end-to-end runs go through a recording proxy and check every message |
 
 `npm test` (`node --test`) fails when any of these outputs is stale. Type checks need `npm install` (devDependency `typescript` only).
 
