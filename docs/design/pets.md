@@ -562,7 +562,7 @@ Clawd 主题 zip 的导入走宠物包转换工具（`app/tool/make_pet_pack.py`
 
 ### 14.2 气泡审批和问题
 
-批准只允许 `allowOnce` 与 `reject`，不提供「以后都允许」。原生按钮复用 `PromptInputPolicy`：出现后延迟启用、拒绝遮挡触摸和已知自动注入，保留 TalkBack 路径。Dart 使用通知的 `ChatAlertsController` 和原始 request，通过对应 host client 回答；host、root session、eventId、请求代次 token 必须全部吻合，撤回、重连或旧窗口上的按钮无法批准新请求。
+批准只允许 `allowOnce` 与 `reject`，不提供「以后都允许」。原生按钮复用 `PromptInputPolicy`：出现后延迟启用、拒绝已知自动注入，保留 TalkBack 路径。之所以不按系统的遮挡标志（`FLAG_WINDOW_IS_OBSCURED` / `filterTouchesWhenObscured`）拒绝：悬浮窗在其他应用、横屏游戏或沉浸式装饰前时系统会误报遮挡，害得批准键在倒计时结束前完全按不动。Dart 使用通知的 `ChatAlertsController` 和原始 request，通过对应 host client 回答；host、root session、eventId、请求代次 token 必须全部吻合，撤回、重连或旧窗口上的按钮无法批准新请求。
 
 只有完整、短小、没有秘密掩码和方向控制字符的工具名及 **全部 JSON 参数** 可批准；命令的 cwd、写入内容、替换文本不会只缩成文件路径。超过字符上限或实际气泡四行容纳不下时只能「去确认」。手机操控关键步骤继续使用已有 `PhonePrompt` 明确确认链路，不经桌宠简化审批。
 

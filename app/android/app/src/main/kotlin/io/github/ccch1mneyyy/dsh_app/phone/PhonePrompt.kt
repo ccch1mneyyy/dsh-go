@@ -312,10 +312,19 @@ class MainThreadCall<T>(private val block: () -> T) {
     }
 }
 
-/** Input facts are supplied by Android; policies stay testable without pretending to inject a real touch. */
+/**
+ * Input facts are supplied by Android; policies stay testable without pretending to inject a real touch.
+ *
+ * Neither [android.view.MotionEvent.FLAG_WINDOW_IS_OBSCURED] nor the platform's
+ * `filterTouchesWhenObscured` gate is consulted: for an overlay window the system raises those
+ * flags for windows the person can see and aim at (another app in front, a landscape game, the
+ * immersive-mode decor), and a rate that swallowed every such touch left the approval buttons
+ * dead until the countdown expired. Injection is what the remaining checks cover, and a real
+ * finger is the one thing an overlay cannot fake.
+ */
 object PromptInputPolicy {
-    fun allows(now: Long, armedAt: Long, live: Boolean, injecting: Boolean, obscured: Boolean,
+    fun allows(now: Long, armedAt: Long, live: Boolean, injecting: Boolean,
                virtualDevice: Boolean, suspiciousStroke: Boolean, touchExploration: Boolean): Boolean =
-        live && now >= armedAt && !injecting && !obscured &&
+        live && now >= armedAt && !injecting &&
             !(virtualDevice && suspiciousStroke && !touchExploration)
 }

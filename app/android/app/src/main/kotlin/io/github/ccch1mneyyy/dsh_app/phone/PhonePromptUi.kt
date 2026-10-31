@@ -68,7 +68,9 @@ internal object PhonePromptUi {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(ctx, 18), dp(ctx, 16), dp(ctx, 18), dp(ctx, 16))
             background = GradientDrawable().apply { setColor(bg); cornerRadius = dp(ctx, 20).toFloat() }
-            filterTouchesWhenObscured = true
+            // No filterTouchesWhenObscured on the card: it drops every touch inside the card when the
+            // system marks the overlay obscured, which is what a landscape game or another app in
+            // front produces — approvals then never reached 允许 / 拒绝 (PromptInputPolicy).
         }
         card.addView(TextView(ctx).apply {
             text = title(ctx, p.ticket.content)
@@ -149,16 +151,15 @@ internal object PhonePromptUi {
 
     private fun dp(ctx: Context, value: Int) = (ctx.resources.displayMetrics.density * value).toInt()
 
-    /** Same injected/obscured-input boundary as ControlOverlay, also used by the Activity fallback. */
+    /** Same injected-input boundary as ControlOverlay, also used by the Activity fallback. */
     private class PromptButton(ctx: Context, private val armedAt: Long, private val p: PromptPresentation) : TextView(ctx) {
         private val a11y = ctx.getSystemService(AccessibilityManager::class.java)
         private var rejected = false
-        init { filterTouchesWhenObscured = true; isClickable = true; isFocusable = true; gravity = Gravity.CENTER }
+        init { isClickable = true; isFocusable = true; gravity = Gravity.CENTER }
 
         override fun dispatchTouchEvent(event: MotionEvent): Boolean {
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                 rejected = !PromptInputPolicy.allows(SystemClock.elapsedRealtime(), armedAt, p.live, InjectGuard.active(),
-                    event.flags and (MotionEvent.FLAG_WINDOW_IS_OBSCURED or MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED) != 0,
                     event.deviceId <= 0, event.flags and 0x800 != 0 || event.getToolType(0) == MotionEvent.TOOL_TYPE_UNKNOWN,
                     a11y.isTouchExplorationEnabled)
             }

@@ -307,8 +307,9 @@ internal class BubbleView(context: Context, onTap: () -> Unit) : LinearLayout(co
 
 /**
  * A bubble's answer key, as careful as phone control's prompt ([PromptInputPolicy]): no touch before
- * [armedAt] (the bubble may pop up under a finger), none through another app's window, none
- * injected by an accessibility service unless TalkBack is the one reading.
+ * [armedAt] (the bubble may pop up under a finger), none injected by an accessibility service unless
+ * TalkBack is the one reading. An obscured window is not refused here: the system marks overlays
+ * obscured whenever another app or a landscape game is in front, which left these keys dead.
  */
 @SuppressLint("ViewConstructor")
 internal class GuardedButton(context: Context, private val armedAt: Long) : TextView(context) {
@@ -316,14 +317,14 @@ internal class GuardedButton(context: Context, private val armedAt: Long) : Text
     private var rejected = false
 
     init {
-        filterTouchesWhenObscured = true
+        isClickable = true
+        isFocusable = true
     }
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             rejected = !PromptInputPolicy.allows(
                 SystemClock.uptimeMillis(), armedAt, isEnabled, InjectGuard.active(),
-                event.flags and (MotionEvent.FLAG_WINDOW_IS_OBSCURED or 0x2) != 0,
                 event.deviceId <= 0, event.flags and FLAG_IS_ACCESSIBILITY_EVENT != 0 || event.getToolType(0) == MotionEvent.TOOL_TYPE_UNKNOWN,
                 a11y.isTouchExplorationEnabled,
             )

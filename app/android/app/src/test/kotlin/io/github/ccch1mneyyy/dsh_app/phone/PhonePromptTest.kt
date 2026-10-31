@@ -209,18 +209,17 @@ class PhonePromptTest {
     }
 
     @Test fun hardwareStrokeWithAccessibilityFlagStillWorksAfterArming() {
-        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, false, true, false))
+        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, true, false))
     }
 
-    @Test fun injectedAndObscuredTouchesNeverAuthorize() {
-        assertFalse(PromptInputPolicy.allows(1000, 600, true, true, false, false, false, false))
-        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, true, false, false, true))
-        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, false, true, true, false))
+    @Test fun injectedTouchesNeverAuthorize() {
+        assertFalse(PromptInputPolicy.allows(1000, 600, true, true, false, false, false))
+        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, true, true, false))
     }
 
     @Test fun talkBackExceptionDoesNotBypassArmingOrLifetime() {
-        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, true, true, true))
-        assertFalse(PromptInputPolicy.allows(500, 600, true, false, false, true, true, true))
-        assertFalse(PromptInputPolicy.allows(1000, 600, false, false, false, true, true, true))
+        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, true, true, true))
+        assertFalse(PromptInputPolicy.allows(500, 600, true, false, true, true, true))
+        assertFalse(PromptInputPolicy.allows(1000, 600, false, false, true, true, true))
     }
 }
