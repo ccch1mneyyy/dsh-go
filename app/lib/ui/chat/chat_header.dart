@@ -4,16 +4,23 @@
 
 import 'dart:math' as math;
 
+import 'package:dsh_client/dsh_client.dart' show SubagentMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
+import '../../state/agents_state.dart' show subagentParentProvider;
 import '../../state/header_schedule_state.dart';
+import '../../state/sessions_state.dart' show currentSessionProvider;
+import '../../ui_config/ui_config_icons.dart';
+import '../../ui_config/ui_config_model.dart';
+import '../../ui_config/ui_config_state.dart';
 import '../agents/header_agents.dart';
 import '../common/smooth_size.dart';
 import '../common/status_dot.dart';
+import '../plugins/native/native_taps.dart' show runUiAction;
 import '../shell/adaptive/adaptive_scaffold.dart' show AdaptiveChrome;
 import '../shell/adaptive/detail_panel_keys.dart';
 import '../theme/app_icons.dart';
@@ -221,6 +228,7 @@ class ChatHeader extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const _CustomHeaderActions(),
                       SmoothSize(
                         duration: AppMotion.of(context, AppMotion.quick),
                         child: onNewChat == null
@@ -276,6 +284,57 @@ class ChatHeader extends ConsumerWidget {
     painter.dispose();
     final title = scaler.scale(15);
     return _pillPadding * 2 + math.max(title * 5, math.min(statusLine, title * 8));
+  }
+}
+
+/// Custom `header.actions` from ui.json, after the built-in keys.
+///
+/// The chips are `GlassSurface`s like the others in the bar; a tap runs the
+/// same action code as every other ui.json control (native taps).
+class _CustomHeaderActions extends ConsumerWidget {
+  const _CustomHeaderActions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actions = ref
+        .watch(uiOverridesProvider.select((o) => o.config.headerActions))
+        ?.whereType<UiHeaderCustomItem>()
+        .toList(growable: false);
+    if (actions == null || actions.isEmpty) return const SizedBox.shrink();
+    // A one-shot subagent chat renders ReadOnlyBar instead of the composer, so
+    // a send action would only insert text that can never be sent. Hide those
+    // buttons there; every other action still works.
+    final sessionId = ref.watch(currentSessionProvider);
+    final readOnly =
+        sessionId != null &&
+        ref.watch(subagentParentProvider(sessionId).select((p) => p?.address.mode == SubagentMode.oneShot));
+    final visible = <UiHeaderCustomItem>[
+      for (final item in actions)
+        if (!(readOnly && item.action is UiSendAction)) item,
+    ];
+    if (visible.isEmpty) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final item in visible)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: SizedBox.square(
+              dimension: 44,
+              child: GlassSurface(
+                tier: GlassTier.chrome,
+                circle: true,
+                grouped: true,
+                onTap: () => runUiAction(context, ref, item.action),
+                child: Tooltip(
+                  message: item.label,
+                  child: Center(child: Icon(uiConfigIcon(item.icon), size: 21)),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 

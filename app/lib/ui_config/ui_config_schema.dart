@@ -161,6 +161,7 @@ abstract final class UiSchema {
     'engine',
     'diagnostics',
     'web',
+    'memory',
     'new-chat',
     'settings',
   ];

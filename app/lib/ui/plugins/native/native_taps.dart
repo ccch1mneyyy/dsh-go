@@ -32,6 +32,7 @@ import '../../../state/sessions_state.dart';
 import '../../../ui_config/ui_config_model.dart';
 import '../../features/all_features_page.dart' show dshWebOpenerProvider;
 import '../../features/feature_catalog.dart';
+import '../../memory/memory_page.dart';
 import '../../settings/index/settings_pages.dart' show settingsPageForLink;
 import '../../settings/settings_screen.dart';
 import 'native_panel.dart';
@@ -758,6 +759,13 @@ Future<void> openNativePage(BuildContext context, WidgetRef ref, String page, {S
       return;
     case 'settings':
       await navigator.push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
+      return;
+    case 'memory':
+      if (sessionId == null) {
+        _toast(context, context.l10n.plugslotsNeedsChat);
+        return;
+      }
+      await navigator.push(MaterialPageRoute<void>(builder: (_) => MemoryPage(sessionId: sessionId)));
       return;
   }
   final item = [for (final section in featureSections) ...section.items].where((i) => i.id == page).firstOrNull;

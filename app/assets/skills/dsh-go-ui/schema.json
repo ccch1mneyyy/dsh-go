@@ -156,7 +156,7 @@
         "agent-loop", "shell-settings", "web-search", "plugins", "plugin-inventory", "cordis", "agent-team",
         "cot-translation", "voice-input", "forum", "community", "ds-bot", "share-profile", "search",
         "notifications", "workspaces", "general", "account", "remote", "phone", "engine", "diagnostics", "web",
-        "new-chat", "settings"
+        "memory", "new-chat", "settings"
       ]
     },
     "actionType": { "enum": ["send", "open", "command", "link"] },

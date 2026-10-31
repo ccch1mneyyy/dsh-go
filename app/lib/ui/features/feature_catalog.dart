@@ -20,6 +20,7 @@ import '../bots/bots_page.dart';
 import '../community/community_page.dart';
 import '../cordis/cordis_page.dart';
 import '../files/files_page.dart';
+import '../memory/memory_page.dart';
 import '../forum/forum_home_page.dart';
 import '../phone/phone_control_screen.dart';
 import '../plugins/plugin_detail_sheet.dart';
@@ -211,6 +212,14 @@ final featureSections = <FeatureSection>[
       tile: FeatureKind.files,
       needsSession: true,
       native: (id) => WorkspaceFilesPage(sessionId: _session(id)),
+    ),
+    FeatureItem.localized(
+      id: 'memory',
+      title: (l10n) => '记忆',
+      summary: (l10n) => '查看跨设备共享记忆与 Markdown 原文',
+      icon: AppIcons.readText,
+      needsSession: true,
+      native: (id) => MemoryPage(sessionId: _session(id)),
     ),
     FeatureItem.localized(
       id: 'terminal',
