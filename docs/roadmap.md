@@ -126,6 +126,8 @@
 
 状态（10-23）：A、B 均已完成。A：`packages/dsh_remote`（Noise IK 过官方向量；对自建的上游服务端 + Host 插件做了中转端到端测试），App 内账号登录、主机列表、指纹确认；未验证线上 dsh.r2049.cn 真实账号登录与 WebRTC 直连（未实现）。B：SSH 远程（主机指纹 TOFU、自动启动远端 dsh web、隧道、断线重连；私钥可粘贴或从文件导入），对本机临时 sshd 和开发机真实 sshd（DSH 0.2.0-rc.2）做了端到端测试。抽屉内可切换 本机 / SSH / 远程 主机。
 
+状态（10-31）：A 的直连已实现并接线。`packages/dsh_remote/lib/src/transport/webrtc_transport.dart` 的 `WebRtcTransport` 走 LAN / P2P / TURN（经 `peerConnector` 选择性启用，`null` 时与原来一样全程 Relay），App 侧 `app/lib/state/hosts_state.dart` 传 `peerConnector: flutterPeerConnector`、`app/lib/remote/relay/dsh_remote_backend.dart` 提供 `direct(bool)` 开关；范围与验证见 `packages/dsh_remote/README.md` 状态表与 `VERIFICATION.md`（Android 35 x86_64 上真实 P2P 与关闭直连的 Relay 探针均通过）。仍未验证：真机、跨公网 NAT、真实 TURN。上面 10-23 那条里的「未实现」是当时的记录，保留不动。
+
 建议先 B 后 A：B 不依赖外部、能马上让"远程连 dsh-TUI / 电脑 DSH"可用；A 依赖上游的中转服务，放在后面做。两者都接到同一个 `HostConnection`，抽屉里加"主机切换"（本机 / 电脑 / 服务器）。
 
 ## P3：生态与社区
