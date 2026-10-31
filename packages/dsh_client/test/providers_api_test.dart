@@ -360,6 +360,27 @@ void main() {
       }, reason: 'the false was replaced by the dict, so turning thinking off again drops the field');
     });
 
+    test('a level the adapter does not know is dropped on read, so an imported route still validates', () {
+      final imported = ProviderModelSpec.fromJson(const {
+        'id': 'glm-5.3-flash',
+        'reasoningEfforts': {'none': 'none', 'minimal': 'minimal', 'max': 'max'},
+      })!;
+      expect(imported.toJson()['reasoningEfforts'], {
+        'minimal': 'minimal',
+        'max': 'max',
+      }, reason: 'none is not a level dsh-llm-pi-ai accepts');
+      expect(imported.thinkingLevels, ['minimal', 'max']);
+      expect(imported.thinks, isTrue);
+
+      final unknownOnly = ProviderModelSpec.fromJson(const {
+        'id': 'x',
+        'reasoningEfforts': {'none': 'none'},
+      })!;
+      expect(unknownOnly.toJson()['reasoningEfforts'], <String, Object?>{});
+      expect(unknownOnly.thinkingLevels, isEmpty);
+      expect(unknownOnly.thinks, isFalse);
+    });
+
     test('only off is not thinking; an unreadable dict reads as none and still rides along', () {
       expect(plain.withReasoningEfforts(['off']).thinks, isFalse);
       const odd = ProviderModelSpec(

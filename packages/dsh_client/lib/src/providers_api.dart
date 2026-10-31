@@ -70,7 +70,9 @@ const List<String> piAiThinkingLevels = ['off', 'minimal', 'low', 'medium', 'hig
 /// One entry of a profile's `models` list. Fields this client does not model
 /// (`compat`, …) ride along in [extra] so an edit writes them back untouched;
 /// so does `reasoningEfforts`, read through [reasoningEfforts] and replaced
-/// with [withReasoningEfforts].
+/// with [withReasoningEfforts]. A level the adapter does not know is dropped
+/// when the entry is read, so an entry that came from an endpoint offering such
+/// a level cannot keep a value that fails `llm-pi-ai`'s own config validation.
 class ProviderModelSpec {
   const ProviderModelSpec({
     required this.id,
@@ -94,12 +96,27 @@ class ProviderModelSpec {
       input: input?.whereType<String>().toList(growable: false),
       extra: {
         for (final entry in map.entries)
-          if (!_modelFields.contains(entry.key)) entry.key: entry.value,
+          if (!_modelFields.contains(entry.key))
+            entry.key: entry.key == 'reasoningEfforts' ? _knownReasoningEfforts(entry.value) : entry.value,
       },
     );
   }
 
   static const _modelFields = {'id', 'name', 'contextWindow', 'maxTokens', 'input'};
+
+  /// [raw] as a `reasoningEfforts` map `llm-pi-ai` accepts: only the levels in
+  /// [piAiThinkingLevels] survive. A route the Host reads back may carry a level
+  /// this adapter does not know (a gateway answering `none`, say); keeping it
+  /// would fail the plugin's config validation on the next start, so the whole
+  /// adapter would not activate and every custom route would go missing.
+  /// Anything but a map is left alone, keeping the round trip lossless.
+  static Object? _knownReasoningEfforts(Object? raw) {
+    if (raw is! Map) return raw;
+    return <String, Object?>{
+      for (final MapEntry(:key, :value) in raw.entries)
+        if (key is String && piAiThinkingLevels.contains(key)) key: value,
+    };
+  }
 
   final String id;
 
