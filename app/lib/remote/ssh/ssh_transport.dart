@@ -119,8 +119,14 @@ const sshCipherPreference = <SSHCipherType>[
 /// `--dart-define=DSH_SSH_CIPHER=legacy`.
 const _sshCipherProfile = String.fromEnvironment('DSH_SSH_CIPHER', defaultValue: 'fast');
 
+/// Throws on anything but `fast` / `legacy`: a typo in the build define should
+/// fail before the socket opens rather than quietly pick a preference.
 SSHAlgorithms sshClientAlgorithms({String profile = _sshCipherProfile}) =>
-    profile == 'legacy' ? const SSHAlgorithms() : const SSHAlgorithms(cipher: sshCipherPreference);
+    switch (profile) {
+      'fast' => const SSHAlgorithms(cipher: sshCipherPreference),
+      'legacy' => const SSHAlgorithms(),
+      _ => throw ArgumentError.value(profile, 'profile', 'expected fast or legacy'),
+    };
 
 /// `--dart-define=DSH_SSH_TRACE=cipher` in a profile build prints the
 /// negotiated kex, cipher and MAC once per key exchange. Never in release.
@@ -128,10 +134,13 @@ const _sshTrace = String.fromEnvironment('DSH_SSH_TRACE');
 const _traceNegotiation = !kReleaseMode && _sshTrace == 'cipher';
 
 /// Keeps only what a perf A/B needs to read; passing null otherwise keeps
-/// dartssh2's per-packet debug callbacks from costing anything.
+/// dartssh2's per-packet debug callbacks from costing anything. The library
+/// prints the kex line as `_kexType`, the others as `...CipherType` / `...MacType`.
+const _traceKeys = <String>['_kexType', 'CipherType', 'MacType'];
+
 void _printNegotiation(String? line) {
   if (line == null) return;
-  if (line.contains('CipherType') || line.contains('MacType')) debugPrint('dsh-ssh $line');
+  if (_traceKeys.any(line.contains)) debugPrint('dsh-ssh $line');
 }
 
 /// dartssh2-backed transport.
