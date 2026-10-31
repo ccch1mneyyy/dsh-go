@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/usage_state.dart';
@@ -16,21 +17,16 @@ import 'balance_widgets.dart';
 
 /// `8,421` / `1.2 万` / `100 万` / `1.5 亿`。
 String formatTokens(int n) {
+  final locale = AppLocale.current.toString();
   String trim(double v) {
-    final text = v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
-    return text.endsWith('.0') ? text.substring(0, text.length - 2) : text;
+    final formatter = NumberFormat.decimalPattern(locale)..maximumFractionDigits = v >= 100 ? 0 : 1;
+    return formatter.format(v);
   }
 
   if (n < 10000) {
-    final digits = n.abs().toString();
-    final buf = StringBuffer(n < 0 ? '-' : '');
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-      buf.write(digits[i]);
-    }
-    return buf.toString();
+    return NumberFormat.decimalPattern(locale).format(n);
   }
-  if (AppLocale.isEnglish) {
+  if (AppLocale.usesWesternConventions) {
     return n < 1000000
         ? appL10n.activityTokensTenThousands(trim(n / 1000))
         : appL10n.activityTokensHundredMillions(trim(n / 1000000));

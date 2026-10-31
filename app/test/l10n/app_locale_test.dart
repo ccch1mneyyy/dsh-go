@@ -14,6 +14,7 @@ void main() {
     test('a fixed choice wins over the system', () {
       expect(AppLocale.resolve(AppLocale.en, const [Locale('zh', 'CN')]), AppLocale.en);
       expect(AppLocale.resolve(AppLocale.zhCN, const [Locale('en', 'US')]), AppLocale.zhCN);
+      expect(AppLocale.resolve(AppLocale.ptBR, const [Locale('zh', 'CN')]), AppLocale.ptBR);
     });
 
     test('any Chinese system language is Chinese', () {
@@ -26,9 +27,12 @@ void main() {
       }
     });
 
-    test('the first Chinese or English system language decides; others are English', () {
+    test('the first supported system language decides; others are English', () {
       expect(AppLocale.resolve(null, const [Locale('ja'), Locale('zh')]), AppLocale.zhCN);
       expect(AppLocale.resolve(null, const [Locale('fr'), Locale('en')]), AppLocale.en);
+      expect(AppLocale.resolve(null, const [Locale('pt', 'BR')]), AppLocale.ptBR);
+      expect(AppLocale.resolve(null, const [Locale('pt', 'PT')]), AppLocale.ptBR);
+      expect(AppLocale.resolve(null, const [Locale('pt'), Locale('en')]), AppLocale.ptBR);
       expect(AppLocale.resolve(null, const [Locale('ja')]), AppLocale.en);
       expect(AppLocale.resolve(null, const []), AppLocale.zhCN);
     });
@@ -41,6 +45,9 @@ void main() {
     expect(appL10n.commonItemCount(1), '1 item');
     expect(appL10n.commonItemCount(3), '3 items');
     expect(appL10n.monthDay(DateTime(2026, 3, 5)), 'Mar 5');
+    AppLocale.use(AppLocale.ptBR);
+    expect(AppLocale.current, AppLocale.ptBR);
+    expect(appL10n.commonCancel, 'Cancelar');
     AppLocale.use(const Locale('zh'));
     expect(AppLocale.current, AppLocale.zhCN);
     expect(appL10n.monthDay(DateTime(2026, 3, 5)), '3月5日');

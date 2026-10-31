@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="phone_a11y_label">Controle de Telefone DSH</string>
+    <string name="phone_a11y_description">Funciona apenas quando você pede ao DSH para fazer algo em seu telefone: ele lê o texto na tela atual (e tira uma captura de tela quando necessário), em seguida, toca, digita e desliza como você pedir. O conteúdo da tela é enviado para o modelo DeepSeek que você escolheu no DSH. Enquanto funciona, uma barra na parte superior da tela permite pausar, parar ou dirigir a qualquer momento; ações como enviar, pagar ou excluir perguntar primeiro. O DSH nunca preenche senhas ou códigos de verificação, nunca paga por você e nunca altera as configurações ou permissões do sistema.</string>
+    <string name="overlay_ball_running">O DSH está a usar o teu telefone. Toque em para expandir</string>
+    <string name="overlay_ball_paused">Pausa. Toque em para expandir</string>
+    <string name="overlay_ball_stopped">Parado</string>
+    <string name="overlay_collapse">Recolher</string>
+</resources>

@@ -1,5 +1,5 @@
 <p align="center">
-  <b>简体中文</b> · <a href="README.en.md">English</a>
+  <b>简体中文</b> · <a href="README.en.md">English</a> · <a href="README.pt-BR.md">Português</a>
 </p>
 
 <p align="center">
@@ -138,9 +138,9 @@
 
 <br>
 
-<h3 align="center">中文，也说 English</h3>
+<h3 align="center">中文、English，也说 Português</h3>
 
-<p align="center">全部界面支持英文，在设置里切换，默认跟随系统。</p>
+<p align="center">全部界面支持中文、英文和巴西葡萄牙语，在设置里切换，默认跟随系统。</p>
 
 <p align="center">
   <picture>

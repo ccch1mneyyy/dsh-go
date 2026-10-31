@@ -92,4 +92,21 @@ void main() {
     await pump(tester);
     expect(find.text('ctx Cancel'), findsOneWidget);
   });
+
+  testWidgets('Portuguese updates the whole screen and persists', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pump(tester);
+    await tester.tap(find.text('Português'));
+    await tester.pumpAndSettle();
+    expect(find.text('ctx Cancelar'), findsOneWidget);
+    expect(find.text('plain Cancelar'), findsOneWidget);
+    expect(find.text('Idioma'), findsOneWidget);
+    expect(AppLocale.current, AppLocale.ptBR);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString(AppLanguageController.prefsKey), 'pt');
+  });
 }

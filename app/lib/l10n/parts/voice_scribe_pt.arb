@@ -1,0 +1,18 @@
+{
+  "voiceScribeReadFailed": "Não foi possível ler a configuração da voz. Tente novamente.",
+  "voiceScribeSavedReadFailed": "Salvo. Atualizar para ver as configurações mais recentes.",
+  "voiceScribeSaveUnconfirmed": "Não foi possível confirmar o salvamento. Atualizar ou tentar novamente.",
+  "voiceScribeTitle": "Configuração da voz",
+  "voiceScribePolishPrompt": "Fonte polaca",
+  "voiceScribeLanguage": "Língua de reconhecimento",
+  "voiceScribeRefresh": "Atualizar",
+  "voiceScribeHostChanged": "A ligação mudou. Reabrir para continuar.",
+  "voiceScribeUnsupported": "As configurações de voz não estão disponíveis nesta conexão.",
+  "voiceScribePluginDefault": "Padrão",
+  "voiceScribeBuiltInPrompt": "Prompt incorporado",
+  "voiceScribeProviders": "Serviços de reconhecimento",
+  "voiceScribeKeySet": "Chave definida",
+  "voiceScribeNoKey": "Nenhuma chave",
+  "voiceScribeHotwords": "Palavras quentes",
+  "voiceScribeHotwordRules": "{count, plural, =1{1 regra} other{{count} regras}}"
+}

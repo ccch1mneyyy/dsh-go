@@ -142,7 +142,7 @@ Future<ComposeRequest> askAiQuestionRequest(
     case GuideRoute.attachment:
       final String page;
       try {
-        page = await read(guidePageAsset(guidePage, english: english ?? AppLocale.isEnglish));
+        page = await read(guidePageAsset(guidePage, english: english ?? AppLocale.usesWesternConventions));
       } catch (_) {
         return fallback;
       }

@@ -2248,6 +2248,7 @@
   "localeSystem": "System",
   "localeZh": "简体中文",
   "localeEn": "English",
+  "localePt": "Português",
   "localEnvChooseTitle": "Where should DSH run?",
   "localEnvChooseMessage": "You can change this later in Settings",
   "localEnvThisPhoneDetail": "{storage} MB storage · {memory} MB memory",

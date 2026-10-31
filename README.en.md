@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="README.md">简体中文</a> · <b>English</b>
+  <a href="README.md">简体中文</a> · <b>English</b> · <a href="README.pt-BR.md">Português</a>
 </p>
 
 <p align="center">
@@ -138,9 +138,9 @@
 
 <br>
 
-<h3 align="center">English and 中文</h3>
+<h3 align="center">简体中文, English and Português</h3>
 
-<p align="center">The whole app speaks both. It follows your system, or pick one in Settings.</p>
+<p align="center">The interface supports Chinese, English and Brazilian Portuguese. It follows your system, or you can pick a language in Settings.</p>
 
 <p align="center">
   <picture>

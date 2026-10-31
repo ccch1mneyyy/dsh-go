@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../../notify/approval_reason.dart';
 import '../../common/risk_notice.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/theme.dart';
@@ -87,8 +88,7 @@ class _ApprovalCardState extends State<ApprovalCard> {
   }
 
   String? get _reason {
-    final display = widget.request.displayReason;
-    final localized = display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'] ?? display['en'];
+    final localized = localizedApprovalReason(widget.request.displayReason, AppLocale.current.languageCode);
     final text = (localized ?? widget.request.reason)?.trim();
     return text == null || text.isEmpty ? null : text;
   }

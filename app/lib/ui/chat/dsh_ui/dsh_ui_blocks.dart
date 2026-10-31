@@ -5,6 +5,7 @@
 // v2 emptyState and gallery (docs/design/plugin-ui-v3.md §4.2).
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -840,22 +841,19 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
     } else {
       next = {option.key};
     }
+    final args = node.multi
+        ? {
+            'values': [
+              for (final o in node.options)
+                if (next.contains(o.key)) o.key,
+            ],
+          }
+        : {'value': option.key};
+    if (utf8.encode(jsonEncode(args)).length > DshUiControlLimits.valueBytes) return;
     setState(() => _local = next);
     final ok = await invoke(
       option.key,
-      PluginAction(
-        id: node.id,
-        args: node.multi
-            ? {
-                'values': [
-                  for (final o in node.options)
-                    if (next.contains(o.key)) o.key,
-                ],
-              }
-            : {'value': option.key},
-        source: PluginActionSource.option,
-        path: node.path,
-      ),
+      PluginAction(id: node.id, args: args, source: PluginActionSource.option, path: node.path),
     );
     if (!ok && mounted) setState(() => _local = before);
   }

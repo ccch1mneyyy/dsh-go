@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="shortcut_new_chat">Nova conversa</string>
+    <string name="shortcut_voice_input">Entrada de voz</string>
+    <string name="tile_new_chat">Nova conversa</string>
+</resources>

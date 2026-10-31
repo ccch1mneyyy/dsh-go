@@ -1,0 +1,17 @@
+{
+  "performanceTitle": "Desempenho",
+  "performanceAuto": "Automático",
+  "performanceFull": "Completo",
+  "performanceLight": "Luz",
+  "performanceAutoHint": "Ajustar os efeitos por padrão deste dispositivo",
+  "performanceFullHint": "Manter o borrão e a animação",
+  "performanceLightHint": "Reduzir os efeitos em curso e o uso dos recursos",
+  "performanceChoiceHint": "Suas escolhas de animal de estimação e motor têm prioridade",
+  "performanceCooling": "Reduzir os efeitos até que o dispositivo esfrie",
+  "performanceEffects": "Efeitos da interface",
+  "performanceBlur": "Borrão de vidro",
+  "performanceAnimations": "Animação da interface",
+  "performanceSystemMotion": "Também segue a configuração de animações de remoção do sistema",
+  "performanceFollowMode": "Siga o modo de desempenho",
+  "performanceRemoteHint": "Conecte-se a um computador ou servidor para reduzir o trabalho neste celular"
+}

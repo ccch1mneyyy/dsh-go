@@ -11,6 +11,7 @@ import 'package:dsh_app/state/usage_state.dart';
 import 'package:dsh_app/ui/chat/balance_widgets.dart';
 import 'package:dsh_app/ui/chat/slash_palette.dart';
 import 'package:dsh_app/ui/chat/usage_sheet.dart';
+import 'package:dsh_app/l10n/l10n.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -155,6 +156,17 @@ void main() {
       expect(formatPercent(0.004), '<1%');
       expect(formatPercent(0), '0%');
       expect(formatPercent(0.876), '88%');
+    });
+
+    test('token formatting follows the Portuguese locale', () {
+      final previous = AppLocale.current;
+      AppLocale.use(AppLocale.ptBR);
+      try {
+        expect(formatTokens(8421), '8.421');
+        expect(formatTokens(15500), '15,5K');
+      } finally {
+        AppLocale.use(previous);
+      }
     });
   });
 

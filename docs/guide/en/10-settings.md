@@ -39,7 +39,7 @@ Shows your DeepSeek account or API key and balance; tap it to open your account.
 ## General
 
 - **Interface**: whether the app opens to **Native** or **Web**, and DSH Web's options; see [Web mode](05-web.md).
-- **Language**: **System**, **简体中文** or **English**.
+- **Language**: **System**, **简体中文**, **English** or **Português** (Brazilian Portuguese).
 - **Notifications**: turn on **Allow notifications**, then choose **Turn complete**, **Error or stopped**, **Needs approval** and **Questions for you**. Alerts from remote hosts need the app running and the connection online. Sound, banners and the lock screen are set in system settings.
 - **Voice input**: which recognition turns speech into text.
 - **Performance**: **Auto**, **Full** or **Light**, plus glass blur and interface motion.

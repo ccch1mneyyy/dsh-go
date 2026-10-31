@@ -1,0 +1,12 @@
+{
+  "phoneTaskResultReady": "Tarefa concluída · Ver o resultado",
+  "phoneTaskEndedResult": "Tarefa terminada · Ver resultado",
+  "phoneBackgroundGuideTitle": "Confirmações e devolução",
+  "phoneBackgroundGuideSubtitle": "Veja confirmações e resultados da tarefa no tempo",
+  "phoneBackgroundGuideBody": "Quando um passo precisa de sua decisão, um cartão DSH Go aparece. Se o cartão não estiver disponível, o aplicativo tente uma notificação ou retorna aqui. Permitir notificações de controle de telefone e alertas pop-up nas configurações do sistema.",
+  "phoneBackgroundOemHint": "Nas permissões do sistema para o DSH Go, verifique “Exibir janelas pop-up enquanto executa em segundo plano”, se disponível. Permitir isso pode ajudar o aplicativo a retornar automaticamente. Os nomes dos menus variam de acordo com a versão do sistema.",
+  "phoneBackgroundReturnHint": "Se o aplicativo não retornar quando uma tarefa terminar, toque em \"Tarefa completa · Ver resultado\". Se as notificações do sistema ou janelas de fundo estão bloqueadas, você pode precisar abrir o DSH Go você mesmo.",
+  "phoneBackgroundGotIt": "Entendido.",
+  "phoneBackgroundOpenSettings": "Abrir configurações do sistema",
+  "phoneBackgroundNotificationBlocked": "Permitir alertas pop-up para notificações de controle de telefone"
+}

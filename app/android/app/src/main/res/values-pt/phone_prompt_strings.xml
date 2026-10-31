@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="phone_prompt_approval_title">DSH Go · Aprovação</string>
+    <string name="phone_prompt_review_title">DSH Go · Revisão necessária</string>
+    <string name="phone_prompt_native_title">DSH Go · Controle de telefone</string>
+    <string name="phone_prompt_handoff_title">DSH Go · Sua vez</string>
+    <string name="phone_prompt_allow_once">Permitir uma vez</string>
+    <string name="phone_prompt_allow_app">Permitir esta aplicativo para esta tarefa</string>
+    <string name="phone_prompt_allow_task">Permitir esta tarefa</string>
+    <string name="phone_prompt_reject">Rejeitar</string>
+    <string name="phone_prompt_open">Revisão na aplicativo</string>
+    <string name="phone_prompt_later">Mais tarde.</string>
+    <string name="phone_prompt_stop">Parar tarefa</string>
+    <string name="phone_prompt_continue">Continuar</string>
+    <string name="phone_prompt_remaining">%1$d Restando · nenhuma resposta não permitirá uma ação</string>
+    <string name="phone_prompt_result_channel">Resultados do controlo telefónico</string>
+    <string name="phone_prompt_result_title">DSH Go · Tarefa terminada</string>
+    <string name="phone_prompt_result_text">Ver os resultados</string>
+</resources>

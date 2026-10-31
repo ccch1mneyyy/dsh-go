@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """Merges the per-area ARB parts and regenerates the L10n class.
 
-  lib/l10n/parts/<area>_zh.arb  +  lib/l10n/parts/<area>_en.arb
-      -> lib/l10n/app_zh.arb (template) + lib/l10n/app_en.arb
+  lib/l10n/parts/<area>_{zh,en,pt}.arb
+      -> lib/l10n/app_{zh,en,pt}.arb
       -> flutter gen-l10n -> lib/l10n/gen/
 
 Checks, all fatal (exit 1, nothing written):
   - every part is valid JSON, keys are lowerCamel identifiers;
-  - a key appears in only one part, and in both languages of that part;
-  - the placeholders of a key are the same in zh and en, and match its
+  - a key appears in only one part, and in all languages of that part;
+  - the placeholders of a key are the same in every language, and match its
     "@key" metadata when that declares any;
   - braces balance and plural / select blocks have an `other` case.
 
 Usage: tool/l10n_merge.py [--check] [--no-gen] [--part AREA]
   --check      validate only (no writes, no gen-l10n)
   --no-gen     write the merged ARBs but skip `flutter gen-l10n`
-  --part AREA  validate only lib/l10n/parts/AREA_{zh,en}.arb (implies --check);
+  --part AREA  validate only lib/l10n/parts/AREA_{zh,en,pt}.arb (implies --check);
                keys clashing with other parts are still reported
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ from collections import OrderedDict
 APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 L10N = os.path.join(APP, 'lib', 'l10n')
 PARTS = os.path.join(L10N, 'parts')
-LANGS = ('zh', 'en')
+LANGS = ('zh', 'en', 'pt')
 KEY_RE = re.compile(r'^[a-z][a-zA-Z0-9]*$')
 IDENT = re.compile(r'[A-Za-z_][A-Za-z0-9_]*')
 
@@ -138,43 +138,45 @@ def main(argv):
                 data[lang] = OrderedDict()
                 continue
             data[lang] = load(p)
-        zh, en = data['zh'], data['en']
+        zh = data['zh']
         zkeys = [k for k in zh if not k.startswith('@')]
-        ekeys = [k for k in en if not k.startswith('@')]
         for k in zkeys:
             if not KEY_RE.match(k):
                 errors.append(f'{area}: bad key "{k}" (lowerCamel identifiers only)')
             if k in owner:
                 errors.append(f'{area}: key "{k}" already defined in {owner[k]}')
             owner.setdefault(k, area)
-            if k not in en:
-                errors.append(f'{area}: "{k}" has zh but no en')
-        for k in ekeys:
-            if k not in zh:
-                errors.append(f'{area}: "{k}" has en but no zh')
+            for lang in LANGS[1:]:
+                if k not in data[lang]:
+                    errors.append(f'{area}: "{k}" has zh but no {lang}')
+        for lang in LANGS[1:]:
+            for k in (key for key in data[lang] if not key.startswith('@')):
+                if k not in zh:
+                    errors.append(f'{area}: "{k}" has {lang} but no zh')
         for k in zkeys:
-            if k not in en:
+            if any(k not in data[lang] for lang in LANGS[1:]):
                 continue
-            zv, ev = zh[k], en[k]
-            if not isinstance(zv, str) or not isinstance(ev, str):
+            zv = zh[k]
+            if any(not isinstance(data[lang][k], str) for lang in LANGS):
                 errors.append(f'{area}: "{k}" value must be a string')
                 continue
-            if not ev.strip():
-                errors.append(f'{area}: "{k}" en is empty')
             zn, ze = parse_message(zv)
-            en_n, ee = parse_message(ev)
             errors += [f'{area}: "{k}" zh: {e}' for e in ze]
-            errors += [f'{area}: "{k}" en: {e}' for e in ee]
-            if zn != en_n:
-                errors.append(f'{area}: "{k}" placeholders differ: zh {sorted(zn)} en {sorted(en_n)}')
             meta = zh.get('@' + k) or {}
             declared = set((meta.get('placeholders') or {}).keys()) if isinstance(meta, dict) else set()
             if declared and declared != zn:
                 errors.append(f'{area}: "{k}" @{k}.placeholders {sorted(declared)} ≠ message {sorted(zn)}')
-            merged['zh'][k] = zv
+            for lang in LANGS:
+                value = data[lang][k]
+                if not value.strip():
+                    errors.append(f'{area}: "{k}" {lang} is empty')
+                names, issues = parse_message(value)
+                errors += [f'{area}: "{k}" {lang}: {e}' for e in issues]
+                if names != zn:
+                    errors.append(f'{area}: "{k}" placeholders differ: zh {sorted(zn)} {lang} {sorted(names)}')
+                merged[lang][k] = value
             if meta:
                 merged['zh']['@' + k] = meta
-            merged['en'][k] = ev
     if only:
         errors = [e for e in errors if e.startswith(only + ':')]
     if errors:

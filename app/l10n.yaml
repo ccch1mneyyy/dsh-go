@@ -1,5 +1,5 @@
 # gen-l10n config. Don't edit lib/l10n/app_*.arb or lib/l10n/gen/ by hand:
-# strings live in lib/l10n/parts/<area>_{zh,en}.arb and tool/l10n_merge.py
+# strings live in lib/l10n/parts/<area>_{zh,en,pt}.arb and tool/l10n_merge.py
 # merges them, checks them and runs `flutter gen-l10n`.
 arb-dir: lib/l10n
 template-arb-file: app_zh.arb

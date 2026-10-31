@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="native_media_listening">%1$s está ouvindo</string>
+    <string name="native_media_stop">Parar</string>
+    <string name="native_media_close_caption">Fechar a legenda</string>
+</resources>

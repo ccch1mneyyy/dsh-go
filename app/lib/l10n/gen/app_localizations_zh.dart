@@ -7414,6 +7414,9 @@ class L10nZh extends L10n {
   String get localeEn => 'English';
 
   @override
+  String get localePt => 'Português';
+
+  @override
   String get localEnvChooseTitle => 'DSH 在哪里运行？';
 
   @override

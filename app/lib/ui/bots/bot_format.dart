@@ -48,7 +48,7 @@ String shortTime(DateTime? time, {DateTime? now}) {
 
 /// `12345` → `1.2 万`, `980` → `980`.
 String compactCount(int value) {
-  if (AppLocale.isEnglish) return NumberFormat.compact(locale: 'en').format(value);
+  if (AppLocale.usesWesternConventions) return NumberFormat.compact(locale: AppLocale.current.languageCode).format(value);
   if (value >= 100000000) return appL10n.botsCountHundredMillion((value / 100000000).toStringAsFixed(1));
   if (value >= 10000) return appL10n.botsCountTenThousand((value / 10000).toStringAsFixed(value >= 100000 ? 0 : 1));
   return '$value';

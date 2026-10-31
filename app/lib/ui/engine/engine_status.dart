@@ -69,7 +69,7 @@ String? humanizeRuntimeError(String? raw) {
   }
   // l10n:keep native engine error prefix
   if (text.startsWith('存储空间不足')) {
-    if (!AppLocale.isEnglish) return text;
+    if (!AppLocale.usesWesternConventions) return text;
     // l10n:keep native engine error format
     final sizes = RegExp(r'^存储空间不足：需要约 (.+) MB，当前可用 (.+) MB$').firstMatch(text);
     return sizes == null

@@ -1,0 +1,9 @@
+{
+  "nearbyThisChat": "Esta conversa",
+  "nearbyPermissionTitle": "Permissões para esta conversa",
+  "nearbyNewChatDefault": "Novas conversas: {name}",
+  "nearbySetAsDefault": "Usar para novas conversas",
+  "nearbyManageModels": "Gerenciar modelos",
+  "nearbyPermissionPill": "Permissões para esta conversa: {name}",
+  "nearbyChange": "Alterar"
+}

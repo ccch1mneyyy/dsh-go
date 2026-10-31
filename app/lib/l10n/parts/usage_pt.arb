@@ -1,0 +1,9 @@
+{
+  "usageStatsTitle": "Enviar estatísticas anônimas de uso",
+  "usageStatsSection": "Melhorar o DSH Go",
+  "usageStatsFooter": "Apenas contagens de uso, versões e fabricante do celular. Nunca conversas, arquivos ou contas.",
+  "usageNoticeBody": "Sem conversas nem informações pessoais.\nDesative quando quiser.",
+  "usageUpgradeNotice": "Novidade: estatísticas anônimas de uso para melhorar o DSH Go.\nSem conversas nem informações pessoais.",
+  "usageUpgradeLearn": "Saiba mais",
+  "usageUpgradeOff": "Desativar"
+}

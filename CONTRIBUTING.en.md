@@ -22,7 +22,7 @@ Follow [README.en.md](README.en.md) to prepare the toolchain and runtime. Ordina
 
 Use one PR for one independently reviewable problem. Explain the old behavior, its trigger and the resulting behavior. Keep unrelated renames, formatting and directory moves out of the change.
 
-- Maintain interface text in the existing Chinese and English structure. Prefer existing components and icons.
+- Maintain interface text in the existing Chinese, English and Brazilian Portuguese structure. Prefer existing components and icons.
 - Add tests that cover behavior changes. For text or layout-only changes, provide relevant checks or screenshots.
 - When changing a client, bridge or plugin protocol, check compatibility and the callers on the other side.
 - Edit generator inputs, then regenerate their outputs.
@@ -53,7 +53,7 @@ Run these commands from the repository root. Select checks relevant to your chan
 
 The SDK type check requires its TypeScript development dependency. That test is skipped when TypeScript is not installed. Review the output and distinguish a skip from a pass. See [SDK maintenance](sdk/plugin-kit/README.en.md) for generator and synchronization steps.
 
-**Interface text:** edit the Chinese and English ARB files in `app/lib/l10n/parts/`, then generate and check:
+**Interface text:** edit the Chinese, English and Brazilian Portuguese ARB files in `app/lib/l10n/parts/`, then generate and check:
 
 ```bash
 python3 app/tool/l10n_merge.py

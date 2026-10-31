@@ -69,6 +69,13 @@ void main() {
     expect(container.read(nativeStreamProvider), isNotNull);
     expect(bridge.streams.last, 'en');
 
+    await container.read(appLanguageProvider.notifier).set(AppLanguage.pt);
+    await container.read(nativeRawContributionsProvider.future);
+    await _settle();
+    expect(container.read(nativeLocaleProvider), 'pt-BR');
+    expect(bridge.asked.last, 'pt-BR');
+    expect(bridge.streams.last, 'pt-BR');
+
     await container.read(appLanguageProvider.notifier).set(AppLanguage.zh);
     await container.read(nativeRawContributionsProvider.future);
     await _settle();

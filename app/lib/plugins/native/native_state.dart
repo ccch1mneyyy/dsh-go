@@ -38,7 +38,7 @@ import 'native_platform.dart';
 /// View components the app draws (the plugin view renderer's catalogue).
 final nativeViewComponentsProvider = Provider<List<String>>((ref) => dshUiPluginComponents.toList());
 
-/// The language plugin texts come in (`zh-CN`, `en`): the app's, resolved
+/// The language plugin texts come in (`zh-CN`, `en`, `pt-BR`): the app's, resolved
 /// from the setting right here — [AppLocale] switches only once the app's
 /// root rebuilds, after this has recomputed — and, while the app follows the
 /// system, again when the system languages change. A change asks for the
@@ -52,7 +52,11 @@ final nativeLocaleProvider = Provider<String>((ref) {
     ref.onDispose(() => binding.removeObserver(observer));
   }
   final locale = AppLocale.resolve(chosen, binding.platformDispatcher.locales);
-  return locale.languageCode == 'en' ? 'en' : 'zh-CN';
+  return switch (locale.languageCode) {
+    'pt' => 'pt-BR',
+    'en' => 'en',
+    _ => 'zh-CN',
+  };
 });
 
 class _SystemLocales with WidgetsBindingObserver {

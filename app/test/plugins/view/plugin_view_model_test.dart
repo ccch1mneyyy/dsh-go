@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dsh_app/ui/chat/dsh_ui/dsh_ui.dart';
+import 'package:dsh_app/l10n/l10n.dart';
 import 'package:dsh_app/ui/plugins/view/plugin_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -157,6 +158,45 @@ void main() {
       });
       expect(only<DshUiOptions>(bad).id, isEmpty);
       expect(bad.issues.single.path, 'view.id');
+    });
+
+    test('numeric option labels localize without changing plugin selection keys', () {
+      final previous = AppLocale.current;
+      AppLocale.use(AppLocale.ptBR);
+      try {
+        final view = parsed({
+          'type': 'options',
+          'id': 'choice',
+          'options': [
+            {'label': 1.5},
+            {'label': 41800},
+          ],
+          'selected': ['1.5'],
+        });
+        final options = only<DshUiOptions>(view);
+        expect(options.options.map((option) => option.label), ['1,5', '41.800']);
+        expect(options.options.map((option) => option.key), ['1.5', '41800']);
+        expect(options.selected, ['1.5']);
+      } finally {
+        AppLocale.use(previous);
+      }
+    });
+
+    test('explicit plugin option values are preserved exactly', () {
+      final longValue = List.filled(220, 'v').join();
+      final view = parsed({
+        'type': 'options',
+        'id': 'choice',
+        'options': [
+          {'label': 'Empty value', 'value': ''},
+          {'label': 'Long value', 'value': longValue},
+        ],
+        'selected': ['', longValue],
+      });
+      final options = only<DshUiOptions>(view);
+      expect(options.options.map((option) => option.key), ['', longValue]);
+      expect(options.options.map((option) => option.value), ['', longValue]);
+      expect(options.selected, ['', longValue]);
     });
 
     test('text is restricted in plugin views only', () {

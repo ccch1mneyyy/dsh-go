@@ -7828,6 +7828,9 @@ class L10nEn extends L10n {
   String get localeEn => 'English';
 
   @override
+  String get localePt => 'Português';
+
+  @override
   String get localEnvChooseTitle => 'Where should DSH run?';
 
   @override

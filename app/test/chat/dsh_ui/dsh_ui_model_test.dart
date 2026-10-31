@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:dsh_app/ui/chat/dsh_ui/dsh_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dsh_app/l10n/l10n.dart';
 
 Map<String, Object?> text([String value = 'hello']) => {'type': 'text', 'text': value};
 Map<String, Object?> metric([String label = '进度', Object value = '70%']) => {
@@ -547,6 +548,20 @@ void main() {
       expect(formatDshUiNumber(-0.001), '0');
       expect(formatDshUiNumber(double.nan), '—');
       expect(formatDshUiNumber(1e20), '1.0e+20');
+    });
+
+    test('uses Brazilian separators in Portuguese', () {
+      final previous = AppLocale.current;
+      AppLocale.use(AppLocale.ptBR);
+      try {
+        expect(formatDshUiNumber(3800), '3.800');
+        expect(formatDshUiNumber(12.345), '12,3');
+        expect(formatDshUiValue(1.5), '1,5');
+        expect(formatDshUiValue(41800), '41.800');
+        expect(formatDshUiCompact(1500), '1,5K');
+      } finally {
+        AppLocale.use(previous);
+      }
     });
 
     test('compact ticks use 万 and 亿', () {

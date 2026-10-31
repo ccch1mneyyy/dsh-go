@@ -28,6 +28,7 @@ class LanguageSettingsTile extends ConsumerWidget {
         PillSegment(AppLanguage.system, l10n.localeSystem),
         PillSegment(AppLanguage.zh, l10n.localeZh),
         PillSegment(AppLanguage.en, l10n.localeEn),
+        PillSegment(AppLanguage.pt, l10n.localePt),
       ],
       selected: language,
       onChanged: (v) => unawaited(ref.read(appLanguageProvider.notifier).set(v)),

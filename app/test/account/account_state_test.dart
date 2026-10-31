@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:ui' show Brightness;
 
+import 'package:dsh_app/l10n/l10n.dart';
 import 'package:dsh_app/state/account_state.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -504,6 +505,9 @@ void main() {
       expect(m['locale'], 'zh-CN');
       expect(m['version'], isNot(contains('+')));
       expect(m['timezoneOffsetSeconds'], isA<int>());
+      AppLocale.use(AppLocale.ptBR);
+      expect(AccountClientMetadata.current().toJson()['locale'], 'pt-BR');
+      AppLocale.use(AppLocale.zhCN);
     });
   });
 

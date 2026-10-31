@@ -115,7 +115,7 @@ class _DshAppState extends ConsumerState<DshApp> with WidgetsBindingObserver {
         (appearance.source == AccentSource.wallpaper && ref.watch(wallpaperAccentProvider).isLoading);
     final locale = _resolveLocale();
     final performance = ref.watch(performanceDefaultsProvider);
-    _themesFor(ref.watch(accentProvider), locale.languageCode == 'en', performance.blur);
+    _themesFor(ref.watch(accentProvider), locale.languageCode != 'zh', performance.blur);
     if (!waiting && !_settled) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _settled = true);
     }

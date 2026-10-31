@@ -4,7 +4,7 @@
 //  - Without a BuildContext (state, services, error mapping): `appL10n.xxx`,
 //    which always follows the language the app is showing.
 //
-// Strings live in lib/l10n/parts/<area>_{zh,en}.arb; tool/l10n_merge.py
+// Strings live in lib/l10n/parts/<area>_{zh,en,pt}.arb; tool/l10n_merge.py
 // merges them and regenerates lib/l10n/gen/.
 
 import 'package:flutter/widgets.dart';
@@ -18,10 +18,11 @@ export 'gen/app_localizations.dart';
 abstract final class AppLocale {
   static const zhCN = Locale('zh', 'CN');
   static const en = Locale('en');
+  static const ptBR = Locale('pt', 'BR');
 
   /// Locales MaterialApp offers. zh_CN (not bare zh) keeps CJK glyphs
   /// Chinese on non-Chinese systems (typography.dart「汉字字形」).
-  static const supported = [zhCN, en];
+  static const supported = [zhCN, en, ptBR];
 
   static Locale _locale = zhCN;
   static L10n _l10n = lookupL10n(zhCN);
@@ -30,23 +31,37 @@ abstract final class AppLocale {
   static Locale get current => _locale;
 
   static bool get isEnglish => _locale.languageCode == 'en';
+  /// Non-Chinese locales use the same numeric units and fallback content as English.
+  static bool get usesWesternConventions => _locale.languageCode != 'zh';
 
   static L10n get l10n => _l10n;
 
-  /// Switches [appL10n] to [locale] (zh_CN or en).
+  /// Switches [appL10n] to [locale] (zh_CN, en or pt_BR).
   static void use(Locale locale) {
-    final next = locale.languageCode == 'en' ? en : zhCN;
+    final next = switch (locale.languageCode) {
+      'en' => en,
+      'pt' => ptBR,
+      _ => zhCN,
+    };
     if (next == _locale) return;
     _locale = next;
     _l10n = lookupL10n(next);
   }
 
-  /// Chinese for any Chinese system language, English for everything else.
+  /// Chinese and Portuguese system languages use their translations; English
+  /// is the fallback for other configured system languages.
   static Locale resolve(Locale? chosen, List<Locale>? system) {
-    if (chosen != null) return chosen.languageCode == 'en' ? en : zhCN;
+    if (chosen != null) {
+      return switch (chosen.languageCode) {
+        'en' => en,
+        'pt' => ptBR,
+        _ => zhCN,
+      };
+    }
     for (final l in system ?? const <Locale>[]) {
       if (l.languageCode == 'zh') return zhCN;
       if (l.languageCode == 'en') return en;
+      if (l.languageCode == 'pt') return ptBR;
     }
     return (system == null || system.isEmpty) ? zhCN : en;
   }

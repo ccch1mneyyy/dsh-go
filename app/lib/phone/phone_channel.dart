@@ -462,7 +462,7 @@ enum AppRule {
 
 /// Labels for well-known packages, used when the native side sends none:
 /// the apps' own names in the app language.
-Map<String, String> get knownAppLabels => AppLocale.isEnglish ? _knownAppLabelsEn : _knownAppLabelsZh;
+Map<String, String> get knownAppLabels => AppLocale.usesWesternConventions ? _knownAppLabelsEn : _knownAppLabelsZh;
 
 // l10n:keep-begin the apps' Chinese names (what Chinese systems show)
 const _knownAppLabelsZh = <String, String>{

@@ -1,0 +1,13 @@
+{
+  "setupAppearanceTitle": "Escolha a aparência",
+  "setupAppearanceMessage": "Você pode alterar isso a qualquer momento em Configurações",
+  "setupLightMode": "Modo leve",
+  "setupCapsulePreparing": "Preparando o ambiente de execução",
+  "setupCapsuleProgress": "Instalação {percent}%",
+  "setupCapsuleProgressSemantics": "Preparando o ambiente de execução: {percent}% concluído",
+  "setupCapsuleReady": "Ambiente de execução pronto",
+  "setupCapsuleFailed": "Falha na instalação",
+  "setupWaitingBody": "A configuração continuará automaticamente quando estiver pronta",
+  "setupNotifyWhenDone": "Avisaremos quando terminar",
+  "setupAwaitSignIn": "O acesso ao DeepSeek será aberto quando estiver pronto"
+}

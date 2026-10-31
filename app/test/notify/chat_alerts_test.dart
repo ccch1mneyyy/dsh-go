@@ -3,6 +3,8 @@
 
 import 'package:dsh_app/state/hosts_state.dart';
 import 'package:dsh_app/state/notify_state.dart';
+import 'package:dsh_app/notify/chat_alerts.dart';
+import 'package:dsh_app/l10n/l10n.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,14 +19,14 @@ class _Recorder {
 void main() {
   late FakeAlertSource source;
   late _Recorder out;
-  late HostAlertTracker tracker;
+  HostAlertTracker? tracker;
 
   HostAlertTracker start({
     Duration announce = Duration.zero,
     Duration reconcile = const Duration(milliseconds: 30),
     bool Function(String)? skipApproval,
   }) {
-    tracker = HostAlertTracker(
+    final next = HostAlertTracker(
       host: HostRef.local,
       source: source,
       onAlert: out.alerts.add,
@@ -33,8 +35,9 @@ void main() {
       skipApproval: skipApproval,
       announceDelay: announce,
       reconcileDelay: reconcile,
-    )..start();
-    return tracker;
+    );
+    tracker = next..start();
+    return next;
   }
 
   setUp(() {
@@ -45,9 +48,37 @@ void main() {
         session('sub1', title: '子任务', parent: 's1'),
       ];
     out = _Recorder();
+    tracker = null;
   });
 
-  tearDown(() => tracker.dispose());
+  tearDown(() => tracker?.dispose());
+
+  test('approval notification prefers the displayed language reason', () {
+    const request = ApprovalRequest(
+      eventId: 'approval',
+      sessionId: 's1',
+      toolName: 'bash',
+      reason: 'fallback reason',
+      displayReason: {'en': 'English reason', 'pt-BR': 'Motivo em português'},
+    );
+    const blankPortuguese = ApprovalRequest(
+      eventId: 'approval-blank',
+      sessionId: 's1',
+      toolName: 'bash',
+      reason: 'fallback reason',
+      displayReason: {'en': 'English reason', 'pt-BR': '   '},
+    );
+    final previous = AppLocale.current;
+    try {
+      AppLocale.use(AppLocale.en);
+      expect(approvalText(request), contains('English reason'));
+      AppLocale.use(AppLocale.ptBR);
+      expect(approvalText(request), contains('Motivo em português'));
+      expect(approvalText(blankPortuguese), contains('English reason'));
+    } finally {
+      AppLocale.use(previous);
+    }
+  });
 
   group('requests', () {
     test('an approval alerts once, with the card verb and reason', () async {

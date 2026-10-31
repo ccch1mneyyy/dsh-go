@@ -10,11 +10,12 @@ import java.util.Locale
  * Native text in the language the app shows (设置 → 语言), not the system's.
  *
  * The Flutter side stores the choice in SharedPreferences as `app_language`
- * (`system` / `zh` / `en`, lib/state/locale_state.dart); here it is
+ * (`system` / `zh` / `en` / `pt`, lib/state/locale_state.dart); here it is
  * `flutter.app_language` in `FlutterSharedPreferences`. `values/` holds
  * English, `values-zh/` Chinese, so "follow the system" is plain resource
  * resolution: any Chinese system language gets Chinese, everything else
- * English, the same rule as AppLocale.resolve in Dart.
+ * English and `values-pt/` holds Brazilian Portuguese, matching
+ * AppLocale.resolve in Dart.
  */
 object AppStrings {
     /** The app's name as the phone shows it (`android:label` in AndroidManifest.xml), in every
@@ -26,12 +27,12 @@ object AppStrings {
 
     @Volatile private var cache: Pair<String, Context>? = null
 
-    /** `zh`, `en`, or null to follow the system. */
+    /** `zh`, `en`, `pt`, or null to follow the system. */
     fun language(ctx: Context): String? =
         (ctx.applicationContext ?: ctx)
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY, null)
-            ?.takeIf { it == "zh" || it == "en" }
+            ?.takeIf { it == "zh" || it == "en" || it == "pt" }
 
     /** True when native text comes out in English. */
     fun isEnglish(ctx: Context): Boolean =
@@ -42,7 +43,11 @@ object AppStrings {
         val app = ctx.applicationContext ?: ctx
         val lang = language(app) ?: return app
         cache?.let { (l, c) -> if (l == lang) return c }
-        val locale = if (lang == "zh") Locale.SIMPLIFIED_CHINESE else Locale.ENGLISH
+        val locale = when (lang) {
+            "zh" -> Locale.SIMPLIFIED_CHINESE
+            "pt" -> Locale.forLanguageTag("pt-BR")
+            else -> Locale.ENGLISH
+        }
         val config = Configuration(app.resources.configuration).apply { setLocale(locale) }
         return app.createConfigurationContext(config).also { cache = lang to it }
     }

@@ -201,15 +201,18 @@ final class DshUiCallout extends DshUiNode {
 }
 
 final class DshUiOption {
-  const DshUiOption({required this.label, this.description, this.value});
+  const DshUiOption({required this.label, this.description, this.value, this.selectionKey});
 
   final String label;
   final String? description;
 
-  /// 插件视图：点按时回传的值；null 时用 [label]。
+  /// 插件视图：点按时回传的显式值。
   final String? value;
 
-  String get key => value ?? label;
+  /// Stable plugin selection key, kept separate from the localized label.
+  final String? selectionKey;
+
+  String get key => selectionKey ?? value ?? label;
 }
 
 /// `options`：看完再选（回答组件）。
@@ -1022,16 +1025,18 @@ DshUiNode _options(Map<String, Object?> raw, String path, _Ctx ctx) {
     }
     final item = rawOptions[i];
     final at = '$path.options[$i]';
-    final label = _string(item is Map ? item['label'] : item)?.trim();
+    final rawLabel = item is Map ? item['label'] : item;
+    final label = _string(rawLabel)?.trim();
     if (label == null || label.isEmpty) {
       ctx.note('$at.label', appL10n.viewUiSkippedItemLabel);
       continue;
     }
-    // 插件视图：点按回传 value（缺省 label）。
+    // 插件视图：点按回传完整 value（缺省 label）。
     final rawValue = ctx.p.plugin && item is Map ? item['value'] : null;
-    final value = rawValue is String && rawValue.isNotEmpty ? _clip(rawValue, DshUiLimits.label) : null;
+    final value = rawValue is String ? rawValue : null;
+    final selectionKey = value ?? (ctx.p.plugin ? _rawOptionKey(rawLabel) : null) ?? label;
     // 回复只带 label（插件视图带 value）：同名的两项分不出来，后一项丢掉。
-    if (!seen.add(value ?? label)) {
+    if (!seen.add(selectionKey)) {
       ctx.note('$at.label', appL10n.viewUiDuplicateLabel(_show(label)));
       continue;
     }
@@ -1040,6 +1045,7 @@ DshUiNode _options(Map<String, Object?> raw, String path, _Ctx ctx) {
         label: _clip(label, 80)!,
         description: item is Map ? _clip(_string(item['description'])?.trim(), DshUiLimits.label) : null,
         value: value,
+        selectionKey: ctx.p.plugin ? selectionKey : null,
       ),
     );
   }
@@ -1081,6 +1087,13 @@ String? _string(Object? value) => switch (value) {
   _ => null,
 };
 
+String? _rawOptionKey(Object? value) => switch (value) {
+  final String s when s.trim().isNotEmpty => s.trim(),
+  final num n when n.isFinite => n.toString(),
+  final bool b => '$b',
+  _ => null,
+};
+
 /// 问题说明里引用的值：短 JSON；编不出来的（NaN、无穷大、取不到）照样
 /// 给一个字，不抛错。
 String _show(Object? value) => switch (value) {
@@ -1101,10 +1114,10 @@ String? _clip(String? text, int max) {
 String formatDshUiValue(double value) {
   if (value == value.roundToDouble() && value.abs() < 1e15) {
     final whole = value.round();
-    return whole.abs() >= 10000 ? _group(whole.toString()) : '$whole';
+    return _localizeDshUiNumber(whole.abs() >= 10000 ? _group(whole.toString()) : '$whole');
   }
   final fixed = value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
-  return value.abs() >= 10000 ? _group(fixed) : fixed;
+  return _localizeDshUiNumber(value.abs() >= 10000 ? _group(fixed) : fixed);
 }
 
 String _group(String digits) {
@@ -1279,12 +1292,17 @@ String? _componentSummary(DshUiNode node) {
 String formatDshUiNumber(double value) {
   if (!value.isFinite) return '—';
   final abs = value.abs();
-  if (abs >= 1e15) return value.toStringAsExponential(1);
+  if (abs >= 1e15) return _localizeDshUiNumber(value.toStringAsExponential(1));
   final digits = abs >= 100 ? 0 : (abs >= 10 ? 1 : 2);
   var fixed = value.toStringAsFixed(digits);
   if (digits > 0) fixed = fixed.replaceFirst(RegExp(r'\.?0+$'), '');
   if (fixed == '-0') fixed = '0';
-  return _group(fixed);
+  return _localizeDshUiNumber(_group(fixed));
+}
+
+String _localizeDshUiNumber(String value) {
+  if (AppLocale.current.languageCode != 'pt') return value;
+  return value.replaceAll(',', '\u0000').replaceAll('.', ',').replaceAll('\u0000', '.');
 }
 
 /// 紧凑的刻度：一万以上用「万」，一亿以上用「亿」。
@@ -1292,7 +1310,7 @@ String formatDshUiCompact(double value) {
   if (!value.isFinite) return '—';
   final abs = value.abs();
   if (abs >= 1e16) return value.toStringAsExponential(0);
-  if (AppLocale.isEnglish) {
+  if (AppLocale.usesWesternConventions) {
     if (abs >= 1e9) {
       return appL10n.viewUiHundredMillion(formatDshUiNumber(value / 1e9));
     }

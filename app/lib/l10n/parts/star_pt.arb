@@ -1,0 +1,9 @@
+{
+  "starPromptTitle": "{hours, plural, =0{Eu fiz você companhia em DSH Go por meia hora agora~} =1{Eu fiz-lhe companhia em DSH Go por uma hora agora~} other{Eu fiz-lhe companhia em DSH Go para {hours} horas agora~}}",
+  "starPromptBody": "DSH Go é livre e código aberto. Se tornou seu telefone um pouco mais agradável de usar, por favor, dê - lhe uma Estrela — significa muito para esta pequena baleia!",
+  "starPromptPlea": "Por favorzinho. Importa mesmo!",
+  "starPromptStar": "Estrela-o no GitHub",
+  "starPromptDone": "Já estrelou",
+  "starPromptLater": "Talvez mais tarde.",
+  "starSettingsTitle": "DSH estrela Continuar GitHub"
+}
