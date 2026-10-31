@@ -45,7 +45,7 @@ class HeaderStatus {
 /// (≡) ( 每天的构建检查 (◷) )   ( ✦ V4 Pro ⌄ ) (+)
 ///     ( ● 本机             )
 /// ```
-class ChatHeader extends ConsumerWidget {
+class ChatHeader extends ConsumerStatefulWidget {
   const ChatHeader({
     super.key,
     required this.title,
@@ -88,14 +88,38 @@ class ChatHeader extends ConsumerWidget {
   static double heightOf(BuildContext context) => MediaQuery.paddingOf(context).top + barHeightOf(context) + 8;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatHeader> createState() => _ChatHeaderState();
+}
+
+class _ChatHeaderState extends ConsumerState<ChatHeader> {
+  // Keep TextPainter's paragraph/layout cache across unrelated header rebuilds.
+  // Its setters invalidate layout when the label, metrics or direction change.
+  final _statusPainter = TextPainter(maxLines: 1);
+
+  @override
+  void initState() {
+    super.initState();
+    PaintingBinding.instance.systemFonts.addListener(_fontsChanged);
+  }
+
+  void _fontsChanged() => setState(_statusPainter.markNeedsLayout);
+
+  @override
+  void dispose() {
+    PaintingBinding.instance.systemFonts.removeListener(_fontsChanged);
+    _statusPainter.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final dsh = DshColors.of(context);
     final top = MediaQuery.paddingOf(context).top;
-    final barHeight = barHeightOf(context);
-    final pillHeight = pillHeightOf(context);
+    final barHeight = ChatHeader.barHeightOf(context);
+    final pillHeight = ChatHeader.pillHeightOf(context);
     final titleStyle = theme.textTheme.titleSmall?.copyWith(fontSize: 15, height: 1.3);
     final statusStyle = theme.textTheme.labelSmall?.copyWith(fontSize: 11, height: 1.25);
     final titleFloor = _titleFloor(context, statusStyle);
@@ -115,10 +139,10 @@ class ChatHeader extends ConsumerWidget {
           left: 0,
           right: 0,
           top: 0,
-          child: scrolledUnder == null
+          child: widget.scrolledUnder == null
               ? const SizedBox.shrink()
               : ValueListenableBuilder<double>(
-                  valueListenable: scrolledUnder!,
+                  valueListenable: widget.scrolledUnder!,
                   builder: (context, t, child) => Opacity(opacity: t, child: child),
                   child: TopFade(height: top + barHeight + 12),
                 ),
@@ -144,7 +168,7 @@ class ChatHeader extends ConsumerWidget {
                               tier: GlassTier.chrome,
                               circle: true,
                               grouped: true,
-                              onTap: onOpenDrawer,
+                              onTap: widget.onOpenDrawer,
                               child: Tooltip(
                                 message: chrome?.menuTooltip ?? l10n.chatChats,
                                 child: Center(child: Icon(AppIcons.menu, size: 22, color: colors.onSurface)),
@@ -153,13 +177,13 @@ class ChatHeader extends ConsumerWidget {
                           ),
                   ),
                   Semantics(
-                    button: onTitleTap != null,
-                    hint: onTitleTap == null ? null : l10n.chatViewChatDetails,
+                    button: widget.onTitleTap != null,
+                    hint: widget.onTitleTap == null ? null : l10n.chatViewChatDetails,
                     child: GlassSurface(
                       tier: GlassTier.chrome,
                       stadium: true,
                       grouped: true,
-                      onTap: onTitleTap,
+                      onTap: widget.onTitleTap,
                       // At least the 44 of the round key and the model
                       // chip beside it; 16 on the left, and on the right 16
                       // or the schedule clock, concentric with the end.
@@ -184,17 +208,19 @@ class ChatHeader extends ConsumerWidget {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    HeaderTitleText(title, style: titleStyle),
+                                    HeaderTitleText(widget.title, style: titleStyle),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        StatusDot(tone: status.tone, size: _dot),
+                                        StatusDot(tone: widget.status.tone, size: _dot),
                                         const SizedBox(width: _dotGap),
                                         Flexible(
                                           child: _StatusLabel(
-                                            status: status,
+                                            status: widget.status,
                                             style: statusStyle?.copyWith(
-                                              color: status.tone == StatusTone.warn ? dsh.warning : dsh.textTertiary,
+                                              color: widget.status.tone == StatusTone.warn
+                                                  ? dsh.warning
+                                                  : dsh.textTertiary,
                                             ),
                                           ),
                                         ),
@@ -214,7 +240,7 @@ class ChatHeader extends ConsumerWidget {
                   // conversation has no model chip). Flexible: the chip
                   // takes the width this row gives it.
                   HeaderTrailingSlot(
-                    trailing: Flexible(child: _ChipSlot(child: trailing)),
+                    trailing: Flexible(child: _ChipSlot(child: widget.trailing)),
                   ),
                   // Mirrors the menu key; gone on the new-chat screen. On a
                   // wide window the key that unfolds 对话详情 follows it.
@@ -223,7 +249,7 @@ class ChatHeader extends ConsumerWidget {
                     children: [
                       SmoothSize(
                         duration: AppMotion.of(context, AppMotion.quick),
-                        child: onNewChat == null
+                        child: widget.onNewChat == null
                             ? const SizedBox.shrink()
                             : Padding(
                                 padding: const EdgeInsets.only(left: HeaderTrailingSlot.gap),
@@ -234,7 +260,7 @@ class ChatHeader extends ConsumerWidget {
                                     tier: GlassTier.chrome,
                                     circle: true,
                                     grouped: true,
-                                    onTap: onNewChat,
+                                    onTap: widget.onNewChat,
                                     child: Tooltip(
                                       message: l10n.commonNewChat,
                                       child: Center(child: Icon(AppIcons.newChat, size: 22, color: colors.onSurface)),
@@ -266,14 +292,12 @@ class ChatHeader extends ConsumerWidget {
   /// host's name included, up to eight characters' width.
   double _titleFloor(BuildContext context, TextStyle? statusStyle) {
     final scaler = MediaQuery.textScalerOf(context);
-    final painter = TextPainter(
-      text: TextSpan(text: status.label, style: DefaultTextStyle.of(context).style.merge(statusStyle)),
-      textDirection: Directionality.of(context),
-      textScaler: scaler,
-      maxLines: 1,
-    )..layout();
-    final statusLine = _dot + _dotGap + painter.width;
-    painter.dispose();
+    _statusPainter
+      ..text = TextSpan(text: widget.status.label, style: DefaultTextStyle.of(context).style.merge(statusStyle))
+      ..textDirection = Directionality.of(context)
+      ..textScaler = scaler
+      ..layout();
+    final statusLine = _dot + _dotGap + _statusPainter.width;
     final title = scaler.scale(15);
     return _pillPadding * 2 + math.max(title * 5, math.min(statusLine, title * 8));
   }
@@ -503,7 +527,7 @@ class _RenderPillContent extends RenderBox
   RenderBox get _end => lastChild!;
 
   @override
-  double computeMinIntrinsicWidth(double height) => _text.getMinIntrinsicWidth(height) + ChatHeader._pillPadding;
+  double computeMinIntrinsicWidth(double height) => _text.getMinIntrinsicWidth(height) + _ChatHeaderState._pillPadding;
 
   @override
   double computeMaxIntrinsicWidth(double height) =>
@@ -528,11 +552,11 @@ class _RenderPillContent extends RenderBox
     final end = _end;
     final height = constraints.maxHeight;
     final endWhole = end.getMaxIntrinsicWidth(height);
-    final clock = endWhole > ChatHeader._pillPadding + _slack;
+    final clock = endWhole > _ChatHeaderState._pillPadding + _slack;
     final textFloor = math.min(_textFloor, text.getMaxIntrinsicWidth(height));
     _showsEnd = !clock || textFloor + endWhole <= constraints.maxWidth + _slack;
     end.layout(BoxConstraints(maxHeight: height), parentUsesSize: true);
-    final endWidth = _showsEnd ? end.size.width : ChatHeader._pillPadding;
+    final endWidth = _showsEnd ? end.size.width : _ChatHeaderState._pillPadding;
     text.layout(
       BoxConstraints(maxWidth: math.max(0.0, constraints.maxWidth - endWidth), maxHeight: height),
       parentUsesSize: true,
