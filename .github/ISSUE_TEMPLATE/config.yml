@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 先翻一眼 README
+    url: https://github.com/ccch1mneyyy/dsh-Go#readme
+    about: 安装、本机引擎、手机操控、远程主机这几块，README 和 docs/architecture.md 里基本都有

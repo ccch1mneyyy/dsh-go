@@ -1,0 +1,33 @@
+name: 功能请求
+description: 想要个新能力，或者某个交互想改
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先说清你要解决的问题，再说你想要的做法。方案可以聊，问题得是真的。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 现在卡在哪
+      description: 你想做什么、现在得怎么绕
+      placeholder: 我想 …，但现在只能 …
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你想到的做法（可选）
+      description: 不确定也行，说个大方向就够
+    validations:
+      required: false
+
+  - type: input
+    id: device
+    attributes:
+      label: 机型 / 版本（可选）
+      placeholder: 荣耀 Magic5 Pro / Android 16 / 1.0.3
+    validations:
+      required: false

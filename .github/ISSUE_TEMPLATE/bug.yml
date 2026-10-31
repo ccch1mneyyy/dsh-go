@@ -1,0 +1,62 @@
+name: Bug 报告
+description: 有东西不对、报错、卡住，用这个
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        贴之前先搜一下有没有重复的，这个仓库 issue 涨得快，重复的容易被漏掉。
+        能复现的话，把步骤写清楚就够了，不用写得很正式。
+
+  - type: input
+    id: version
+    attributes:
+      label: DSH Go 版本
+      description: 设置 › 关于 里那个版本号
+      placeholder: 1.0.4 (10400021)
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 机型 / 系统 / 引擎版本
+      description: 引擎版本在 设置 › 本机引擎 里能看到
+      placeholder: 荣耀 Magic5 Pro / Android 16 / DSH 0.2.1-rc.4
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 一句话说清现象就行
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 …
+        2. 点 …
+        3. 结果 …
+    validations:
+      required: false
+
+  - type: textarea
+    id: expect
+    attributes:
+      label: 实际看到的 / 预期的
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志（可选）
+      description: 设置 › 本机引擎 › 日志，或者闪退时的报错
+      render: shell
+    validations:
+      required: false
