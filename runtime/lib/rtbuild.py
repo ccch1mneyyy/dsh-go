@@ -813,6 +813,7 @@ def overlay_entries(runtime_info, with_python=False, with_pnpm=False, with_bridg
     f("etc/resolv.conf",
       "# dsh-app default resolvers. The app should rewrite this file at each launch with the\n"
       "# device's current DNS servers (ConnectivityManager LinkProperties.getDnsServers()).\n"
+      "# It adds `no-aaaa` only when the device refuses to send AAAA queries (issue #55).\n"
       "nameserver 223.5.5.5\nnameserver 119.29.29.29\nnameserver 8.8.8.8\n"
       "options timeout:2 attempts:2\n")
     f("etc/hosts", "127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n")

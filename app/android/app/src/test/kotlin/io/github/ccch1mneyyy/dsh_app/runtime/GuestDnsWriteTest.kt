@@ -181,4 +181,36 @@ class GuestDnsWriteTest {
         assertEquals("old configuration\n", target.readText())
         assertFalse(line(report).contains("private-path"))
     }
+
+    @Test fun blockedAaaaProbeAddsNoAaaa() {
+        val root = temporary.newFolder()
+        val probed = mutableListOf<String>()
+        val report = GuestSetup.writeResolvConfFromNetwork(root, { listOf(InetAddress.getByName("192.0.2.53")) }, ::replace) {
+            probed += it; true
+        }
+        assertEquals(listOf("192.0.2.53"), probed)
+        assertTrue(report.noAaaa)
+        assertTrue(File(root, "etc/resolv.conf").readText().endsWith("options timeout:2 attempts:2 no-aaaa\n"))
+        assertTrue(line(report).contains("options=\"timeout:2 attempts:2 no-aaaa\""))
+    }
+
+    @Test fun workingAaaaProbeKeepsIpv6Lookups() {
+        val root = temporary.newFolder()
+        val v6 = InetAddress.getByName("2001:db8::53")
+        val report = GuestSetup.writeResolvConfFromNetwork(root, { listOf(v6) }, ::replace) { false }
+        assertFalse(report.noAaaa)
+        assertFalse(File(root, "etc/resolv.conf").readText().contains("no-aaaa"))
+    }
+
+    @Test fun failingProbeIsTreatedAsNotBlocked() {
+        assertFalse(GuestSetup.aaaaBlocked(servers) { throw IllegalStateException("probe") })
+        assertFalse(GuestSetup.aaaaBlocked(emptyList()) { true })
+    }
+
+    @Test fun noAaaaIsDroppedWhenTheNetworkRecovers() {
+        val root = temporary.newFolder()
+        assertEquals(DnsConfigOutcome.WRITTEN, GuestSetup.writeResolvConf(root, servers, true, ::replace).outcome)
+        assertEquals(DnsConfigOutcome.WRITTEN, GuestSetup.writeResolvConf(root, servers, ::replace).outcome)
+        assertEquals(expected, File(root, "etc/resolv.conf").readText())
+    }
 }

@@ -14,9 +14,14 @@ data class DnsConfigReport(
     val error: DnsConfigError = DnsConfigError.NONE,
     val errno: Int? = null,
     val networkRead: DnsNetworkRead = DnsNetworkRead.PROVIDED,
+    /** The device refused to send an AAAA query, so glibc is told not to ask (issue #55). */
+    val noAaaa: Boolean = false,
 ) {
+    val options: String get() = options(noAaaa)
+
     companion object {
         const val OPTIONS = "timeout:2 attempts:2"
+        fun options(noAaaa: Boolean) = if (noAaaa) "$OPTIONS no-aaaa" else OPTIONS
     }
 }
 
@@ -28,7 +33,7 @@ class DnsConfigLog {
         val detail = buildString {
             append("result=${report.outcome.wire} requested=")
             append(report.requestedServers.take(3).mapIndexed { i, value -> "ns${i + 1}=${address(value)}" }.joinToString(","))
-            append(" options=\"${DnsConfigReport.OPTIONS}\" networkRead=${report.networkRead.wire}")
+            append(" options=\"${report.options}\" networkRead=${report.networkRead.wire}")
             if (report.outcome == DnsConfigOutcome.FAILED) {
                 append(" stage=${report.stage.wire} error=${report.error.wire}")
                 report.errno?.let { append(" errno=$it") }

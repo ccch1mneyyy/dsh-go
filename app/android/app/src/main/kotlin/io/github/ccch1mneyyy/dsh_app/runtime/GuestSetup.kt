@@ -95,12 +95,13 @@ object GuestSetup {
         writeResolvConfFromNetwork(rootfs, {
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             cm.getLinkProperties(cm.activeNetwork)?.dnsServers.orEmpty()
-        }, Os::rename)
+        }, Os::rename, { AaaaProbe.blocked(it) })
 
     internal fun writeResolvConfFromNetwork(
         rootfs: File,
         readNetwork: () -> List<InetAddress>,
         replace: (String, String) -> Unit,
+        probe: (String) -> Boolean = { false },
     ): DnsConfigReport {
         var networkRead = DnsNetworkRead.READ
         val addresses = try {
@@ -109,7 +110,8 @@ object GuestSetup {
             networkRead = DnsNetworkRead.FAILED
             emptyList()
         }
-        return writeResolvConf(rootfs, pickDns(addresses), replace).copy(networkRead = networkRead)
+        val servers = pickDns(addresses)
+        return writeResolvConf(rootfs, servers, aaaaBlocked(servers, probe), replace).copy(networkRead = networkRead)
     }
 
     /** Up to two of the network's servers, IPv4 first, then the public fallbacks: three in all. */
@@ -121,18 +123,35 @@ object GuestSetup {
     }
 
     fun writeResolvConf(rootfs: File, servers: List<String>): DnsConfigReport =
-        writeResolvConf(rootfs, servers, Os::rename)
+        writeResolvConf(rootfs, servers, aaaaBlocked(servers), Os::rename)
+
+    /**
+     * Issue #55: add glibc's `no-aaaa` only when this device refuses to send AAAA queries
+     * to the first server. Probed on every write, so it is dropped again on a network
+     * (or after a VPN change) where AAAA works, and IPv6-only networks keep IPv6 lookups.
+     * Callers run on RuntimeController's worker; the probe never waits for a reply.
+     */
+    internal fun aaaaBlocked(servers: List<String>, probe: (String) -> Boolean = { AaaaProbe.blocked(it) }): Boolean =
+        servers.firstOrNull()?.let { server -> try { probe(server) } catch (_: Exception) { false } } ?: false
 
     internal fun writeResolvConf(
         rootfs: File,
         servers: List<String>,
         replace: (String, String) -> Unit,
+    ): DnsConfigReport = writeResolvConf(rootfs, servers, false, replace)
+
+    internal fun writeResolvConf(
+        rootfs: File,
+        servers: List<String>,
+        noAaaa: Boolean,
+        replace: (String, String) -> Unit,
     ): DnsConfigReport {
         val requested = servers.take(3).toList()
+        val options = DnsConfigReport.options(noAaaa)
         val text = buildString {
             appendLine("# written by dsh-app from the device's active network")
             servers.forEach { appendLine("nameserver $it") }
-            appendLine("options ${DnsConfigReport.OPTIONS}")
+            appendLine("options $options")
         }
         var stage = DnsConfigStage.PREPARE
         try {
@@ -140,14 +159,14 @@ object GuestSetup {
             if (!etc.isDirectory && !etc.mkdirs() && !etc.isDirectory) throw IOException("Cannot prepare resolver directory")
             val target = File(etc, "resolv.conf")
             stage = DnsConfigStage.READ
-            if (target.isFile && target.readText() == text) return DnsConfigReport(DnsConfigOutcome.UNCHANGED, requested)
+            if (target.isFile && target.readText() == text) return DnsConfigReport(DnsConfigOutcome.UNCHANGED, requested, noAaaa = noAaaa)
             // Swapped in whole while DSH runs; also replaces a symlink (e.g. to systemd-resolved) with a plain file.
             val temp = File(etc, ".resolv.conf.dsh-tmp")
             stage = DnsConfigStage.WRITE
             temp.writeText(text)
             stage = DnsConfigStage.REPLACE
             replace(temp.path, target.path)
-            return DnsConfigReport(DnsConfigOutcome.WRITTEN, requested)
+            return DnsConfigReport(DnsConfigOutcome.WRITTEN, requested, noAaaa = noAaaa)
         } catch (e: Exception) {
             val error = when (e) {
                 is ErrnoException -> DnsConfigError.NATIVE
@@ -155,7 +174,7 @@ object GuestSetup {
                 is IOException -> DnsConfigError.IO
                 else -> DnsConfigError.OTHER
             }
-            return DnsConfigReport(DnsConfigOutcome.FAILED, requested, stage, error, (e as? ErrnoException)?.errno)
+            return DnsConfigReport(DnsConfigOutcome.FAILED, requested, stage, error, (e as? ErrnoException)?.errno, noAaaa = noAaaa)
         }
     }
 }

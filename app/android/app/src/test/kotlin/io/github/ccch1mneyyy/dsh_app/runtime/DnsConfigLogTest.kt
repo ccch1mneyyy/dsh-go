@@ -74,4 +74,9 @@ class DnsConfigLogTest {
         assertFalse(text.contains("effective="))
         assertFalse(text.contains("active="))
     }
+
+    @Test fun noAaaaIsVisibleInTheLine() {
+        val text = DnsConfigLog().line(unchanged.copy(noAaaa = true), DnsConfigSource.START, 1, 2)!!
+        assertTrue(text.contains("options=\"timeout:2 attempts:2 no-aaaa\""))
+    }
 }
