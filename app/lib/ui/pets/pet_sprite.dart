@@ -41,6 +41,8 @@ double petScale(PetPack pack, PetSize size, double devicePixelRatio) => pack.pix
 /// frame and calls [onEnd]. With animations turned off in the system it
 /// shows the first frame (and still calls [onEnd] after one pass's time).
 /// Until a new animation's sheet is decoded the previous one keeps showing.
+/// Playback freezes while the app has no visible view, including in the
+/// background where Dart timers can outlive Flutter's frame scheduling.
 class PetSprite extends StatefulWidget {
   const PetSprite({
     super.key,
@@ -82,7 +84,7 @@ class PetSprite extends StatefulWidget {
   State<PetSprite> createState() => PetSpriteState();
 }
 
-class PetSpriteState extends State<PetSprite> {
+class PetSpriteState extends State<PetSprite> with WidgetsBindingObserver {
   final _repaint = ValueNotifier<int>(0);
   ui.Image? _image;
 
@@ -97,6 +99,7 @@ class PetSpriteState extends State<PetSprite> {
   VoidCallback? _pending;
   bool _reduced = false;
   bool _ticking = true;
+  bool _appVisible = true;
   bool _ended = false;
   int _generation = 0;
 
@@ -107,6 +110,27 @@ class PetSpriteState extends State<PetSprite> {
   /// The animation on screen (null until its sheet is decoded).
   @visibleForTesting
   PetAnimation? get shown => _shown;
+
+  @override
+  void initState() {
+    super.initState();
+    _appVisible = _visibleIn(WidgetsBinding.instance.lifecycleState);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Inactive views can still be visible (split screen, a system dialog).
+  // Null is the period before the platform sends its first lifecycle event.
+  static bool _visibleIn(AppLifecycleState? state) => switch (state) {
+    null || AppLifecycleState.resumed || AppLifecycleState.inactive => true,
+    _ => false,
+  };
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final wasPaused = _paused;
+    _appVisible = _visibleIn(state);
+    if (_paused != wasPaused) _pauseChanged();
+  }
 
   @override
   void didChangeDependencies() {
@@ -137,6 +161,7 @@ class PetSpriteState extends State<PetSprite> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cancelTimer();
     _clock.stop();
     _image?.dispose();
@@ -176,6 +201,7 @@ class PetSpriteState extends State<PetSprite> {
   }
 
   bool get _still => widget.still || _reduced || !_ticking;
+  bool get _paused => widget.paused || !_appVisible;
 
   void _schedule() {
     _cancelTimer();
@@ -206,7 +232,7 @@ class PetSpriteState extends State<PetSprite> {
   void _arm(Duration delay, VoidCallback callback) {
     _remaining = delay;
     _pending = callback;
-    if (widget.paused) return;
+    if (_paused) return;
     _due = _clock.elapsed + delay;
     _timer = Timer(delay, () {
       _timer = null;
@@ -218,7 +244,7 @@ class PetSpriteState extends State<PetSprite> {
   }
 
   void _pauseChanged() {
-    if (widget.paused) {
+    if (_paused) {
       final due = _due;
       if (due != null) {
         final left = due - _clock.elapsed;

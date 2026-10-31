@@ -49,8 +49,140 @@ Future<void> showSprite(WidgetTester tester, PetAnimation anim, {bool paused = f
 
 PetSpriteState sprite(WidgetTester tester) => tester.state<PetSpriteState>(find.byType(PetSprite));
 
+void hideApp(WidgetTester tester, AppLifecycleState target) {
+  for (final state in [
+    AppLifecycleState.inactive,
+    AppLifecycleState.hidden,
+    AppLifecycleState.paused,
+    AppLifecycleState.detached,
+  ]) {
+    tester.binding.handleAppLifecycleStateChanged(state);
+    if (state == target) return;
+  }
+}
+
+void showApp(WidgetTester tester) {
+  switch (tester.binding.lifecycleState) {
+    case AppLifecycleState.paused:
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    case AppLifecycleState.hidden:
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    default:
+      break;
+  }
+  tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+}
+
 void main() {
   tearDown(PetSheets.instance.clear);
+
+  for (final background in [AppLifecycleState.hidden, AppLifecycleState.paused, AppLifecycleState.detached]) {
+    testWidgets('$background holds the frame until a visible view returns', (tester) async {
+      showApp(tester);
+      addTearDown(() => showApp(tester));
+      final anim = animation('lifecycle-$background');
+      await warmSheets(tester, deepy, [anim]);
+      await showSprite(tester, anim);
+      await tester.pump(frameTime);
+      final state = sprite(tester);
+      expect(state.frame, 1);
+
+      hideApp(tester, background);
+      // One frame period avoids accidentally checking a whole loop cycle.
+      await tester.pump(frameTime);
+      expect(state.frame, 1);
+      await tester.pump(const Duration(hours: 4));
+      expect(state.frame, 1);
+
+      showApp(tester);
+      expect(sprite(tester), same(state));
+      expect(state.frame, 1, reason: 'resume must preserve the visible frame');
+      await tester.pump(frameTime);
+      expect(state.frame, 2);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
+  testWidgets('inactive is still visible and does not freeze playback', (tester) async {
+    showApp(tester);
+    addTearDown(() => showApp(tester));
+    final anim = animation('inactive');
+    await warmSheets(tester, deepy, [anim]);
+    await showSprite(tester, anim);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a sprite mounted while hidden starts when the app is visible', (tester) async {
+    showApp(tester);
+    addTearDown(() => showApp(tester));
+    final anim = animation('initial-hidden');
+    await warmSheets(tester, deepy, [anim]);
+    hideApp(tester, AppLifecycleState.hidden);
+    // A hidden binding normally defers builds, so force the initial mount to
+    // exercise the sprite's initial lifecycle snapshot without a resume event.
+    tester.binding.scheduleForcedFrame();
+    await showSprite(tester, anim);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 0);
+    showApp(tester);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('lifecycle visibility and explicit pause must both permit playback', (tester) async {
+    showApp(tester);
+    addTearDown(() => showApp(tester));
+    final anim = animation('two-pause-gates');
+    await warmSheets(tester, deepy, [anim]);
+    await showSprite(tester, anim);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 1);
+
+    await showSprite(tester, anim, paused: true);
+    hideApp(tester, AppLifecycleState.hidden);
+    showApp(tester);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 1, reason: 'returning to the app does not override an explicit pause');
+
+    hideApp(tester, AppLifecycleState.hidden);
+    tester.binding.scheduleForcedFrame();
+    await showSprite(tester, anim);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 1, reason: 'uncovering a sprite cannot resume it in the background');
+    showApp(tester);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 2);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a finite animation cannot complete in the background or complete twice', (tester) async {
+    showApp(tester);
+    addTearDown(() => showApp(tester));
+    final anim = animation('lifecycle-finite', loop: false);
+    var ended = 0;
+    await warmSheets(tester, deepy, [anim]);
+    await showSprite(tester, anim, onEnd: () => ended++);
+    await tester.pump(frameTime);
+    await tester.pump(frameTime);
+    expect(sprite(tester).frame, 2);
+
+    hideApp(tester, AppLifecycleState.paused);
+    await tester.pump(const Duration(hours: 1));
+    expect(ended, 0);
+    showApp(tester);
+    await tester.pump(frameTime);
+    expect(ended, 1);
+    hideApp(tester, AppLifecycleState.hidden);
+    showApp(tester);
+    await tester.pump(frameTime);
+    expect(ended, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets('a long pause holds a nonzero frame and resumes without resetting', (tester) async {
     final anim = animation('pause-loop');
